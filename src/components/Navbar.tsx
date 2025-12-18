@@ -65,25 +65,26 @@ export default function Navbar() {
             {status === "loading" ? (
               <div className="w-8 h-8 bg-[#1A3A5C] rounded-full animate-pulse"></div>
             ) : status === "authenticated" ? (
-              <div className="relative">
-                <button
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white/5 transition-colors"
-                >
-                  <div className="w-8 h-8 bg-gradient-to-r from-[#16C784] to-[#2DFF88] rounded-full flex items-center justify-center shadow-lg shadow-[#16C784]/20">
-                    <span className="text-white font-medium text-sm">
-                      {session.user?.name?.[0]?.toUpperCase() || "U"}
-                    </span>
-                  </div>
-                  <svg
-                    className={`w-4 h-4 text-gray-400 transition-transform ${isMenuOpen ? "rotate-180" : ""}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white/5 transition-colors"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+                    <div className="w-8 h-8 bg-gradient-to-r from-[#16C784] to-[#2DFF88] rounded-full flex items-center justify-center shadow-lg shadow-[#16C784]/20">
+                      <span className="text-white font-medium text-sm">
+                        {session.user?.name?.[0]?.toUpperCase() || "U"}
+                      </span>
+                    </div>
+                    <svg
+                      className={`w-4 h-4 text-gray-400 transition-transform ${isMenuOpen ? "rotate-180" : ""}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
 
                 {/* Dropdown */}
                 {isMenuOpen && (
@@ -160,12 +161,12 @@ export default function Navbar() {
                       )}
                     </div>
 
-                    {/* Logout */}
-                    <div className="p-2 border-t border-white/10">
+                    {/* Logout - Mobile only */}
+                    <div className="p-2 border-t border-white/10 sm:hidden">
                       <button
                         onClick={() => {
                           setIsMenuOpen(false);
-                          signOut({ callbackUrl: "/" });
+                          signOut({ callbackUrl: "/login" });
                         }}
                         className="flex items-center gap-3 w-full px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
                       >
@@ -177,6 +178,18 @@ export default function Navbar() {
                     </div>
                   </div>
                 )}
+                </div>
+
+                {/* Logout Button - Visible */}
+                <button
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  className="hidden sm:flex items-center gap-2 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span className="text-sm font-medium">Sair</span>
+                </button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
