@@ -1,0 +1,42 @@
+<svg width="800" height="500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#DC143C;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+
+  <!-- Overlay pattern -->
+  <rect width="100%" height="100%" fill="rgba(0,0,0,0.3)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="100" cy="100" r="150" fill="rgba(255,255,255,0.05)"/>
+  <circle cx="700" cy="400" r="200" fill="rgba(255,255,255,0.05)"/>
+  <circle cx="400" cy="50" r="100" fill="rgba(255,255,255,0.03)"/>
+
+  <!-- Emoji -->
+  <text x="50%" y="25%" font-size="80" text-anchor="middle" filter="url(#glow)">🎸</text>
+
+  <!-- Event Name -->
+  <text x="50%" y="45%" font-family="Arial Black, sans-serif" font-size="52" fill="white" text-anchor="middle" font-weight="900" filter="url(#glow)">FESTIVAL DE VERAO 2026</text>
+
+  <!-- Subtitle -->
+  <text x="50%" y="58%" font-family="Arial, sans-serif" font-size="22" fill="rgba(255,255,255,0.9)" text-anchor="middle">O Maior Festival de Rock</text>
+
+  <!-- Line-up -->
+  <text x="50%" y="72%" font-family="Arial, sans-serif" font-size="18" fill="rgba(255,255,255,0.7)" text-anchor="middle">LINE-UP: Iron Maiden • Guns N Roses</text>
+
+  <!-- Bottom bar -->
+  <rect x="0" y="460" width="800" height="40" fill="rgba(0,0,0,0.5)"/>
+  <text x="50%" y="488%" font-family="Arial, sans-serif" font-size="14" fill="rgba(255,255,255,0.8)" text-anchor="middle">INGRESSOS LIMITADOS • CLASSIFICAÇÃO 18+</text>
+</svg>

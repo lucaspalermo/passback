@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String
+  phone         String?
+  cpf           String?
+  pixKey        String?
+  verified      Boolean   @default(false)
+  isAdmin       Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  ticketsForSale  Ticket[]        @relation("SellerTickets")
+  purchases       Transaction[]   @relation("BuyerTransactions")
+  sales           Transaction[]   @relation("SellerTransactions")
+  disputes        Dispute[]       @relation("UserDisputes")
+  reputation      UserReputation?
+}
+
+model Ticket {
+  id            String    @id @default(cuid())
+  eventName     String
+  eventDate     DateTime
+  eventLocation String
+  ticketType    String
+  price         Float
+  originalPrice Float?
+  description   String?
+  imageUrl      String?   // URL da imagem/flyer do evento
+  status        String    @default("available")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sellerId      String
+  seller        User      @relation("SellerTickets", fields: [sellerId], references: [id])
+  transaction   Transaction?
+}
+
+model Transaction {
+  id              String    @id @default(cuid())
+  amount          Float
+  platformFee     Float
+  sellerAmount    Float
+  mercadoPagoId   String?
+  paymentMethod   String?
+  status          String    @default("pending")
+
+  paidAt          DateTime?
+  confirmedAt     DateTime?
+  releasedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  ticketId        String    @unique
+  ticket          Ticket    @relation(fields: [ticketId], references: [id])
+
+  buyerId         String
+  buyer           User      @relation("BuyerTransactions", fields: [buyerId], references: [id])
+
+  sellerId        String
+  seller          User      @relation("SellerTransactions", fields: [sellerId], references: [id])
+
+  dispute         Dispute?
+}
+
+model Dispute {
+  id            String    @id @default(cuid())
+  reason        String
+  description   String?
+  status        String    @default("open") // open, under_review, resolved_buyer, resolved_seller, closed
+  resolution    String?
+  resolvedBy    String?   // ID do admin que resolveu
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  transactionId String    @unique
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+
+  userId        String    // Quem abriu a disputa
+  user          User      @relation("UserDisputes", fields: [userId], references: [id])
+
+  evidences     Evidence[]
+  messages      DisputeMessage[]
+}
+
+model Evidence {
+  id          String   @id @default(cuid())
+  type        String   // screenshot, photo, document
+  description String?
+  url         String   // URL do arquivo (base64 ou link)
+  uploadedBy  String   // buyer ou seller
+  createdAt   DateTime @default(now())
+
+  disputeId   String
+  dispute     Dispute  @relation(fields: [disputeId], references: [id])
+}
+
+model DisputeMessage {
+  id        String   @id @default(cuid())
+  message   String
+  sender    String   // buyer, seller, admin
+  senderId  String
+  createdAt DateTime @default(now())
+
+  disputeId String
+  dispute   Dispute  @relation(fields: [disputeId], references: [id])
+}
+
+model UserReputation {
+  id                  String   @id @default(cuid())
+
+  // Estatisticas
+  totalSales          Int      @default(0)
+  totalPurchases      Int      @default(0)
+  completedSales      Int      @default(0)
+  completedPurchases  Int      @default(0)
+
+  // Disputas
+  disputesOpened      Int      @default(0)
+  disputesWon         Int      @default(0)
+  disputesLost        Int      @default(0)
+
+  // Score (0-100)
+  trustScore          Int      @default(100)
+
+  // Flags
+  isSuspicious        Boolean  @default(false)
+  isVerified          Boolean  @default(false)
+
+  updatedAt           DateTime @updatedAt
+
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id])
+}
