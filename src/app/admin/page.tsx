@@ -369,7 +369,7 @@ export default async function AdminDashboardPage() {
                           </span>
                         </div>
                         {dispute.resolution && (
-                          <p className="text-gray-500 text-sm mt-2 italic">"{dispute.resolution.substring(0, 100)}..."</p>
+                          <p className="text-gray-500 text-sm mt-2 italic">&ldquo;{dispute.resolution.substring(0, 100)}...&rdquo;</p>
                         )}
                       </div>
                       <Link

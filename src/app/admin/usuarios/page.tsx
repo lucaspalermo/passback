@@ -21,7 +21,7 @@ export default async function AdminUsuariosPage() {
 
   const users = await prisma.user.findMany({
     include: {
-      tickets: { select: { id: true } },
+      ticketsForSale: { select: { id: true } },
       purchases: { select: { id: true, status: true } },
       sales: { select: { id: true, status: true } },
       reputation: true,
@@ -102,7 +102,7 @@ export default async function AdminUsuariosPage() {
                   <div className="flex flex-wrap gap-4">
                     <div className="text-center px-4">
                       <p className="text-xs text-gray-500">Ingressos</p>
-                      <p className="text-lg font-bold text-[#FF8A00]">{u.tickets.length}</p>
+                      <p className="text-lg font-bold text-[#FF8A00]">{u.ticketsForSale.length}</p>
                     </div>
                     <div className="text-center px-4">
                       <p className="text-xs text-gray-500">Compras</p>

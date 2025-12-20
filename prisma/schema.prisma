@@ -55,6 +55,7 @@ model Transaction {
   paymentMethod   String?
   status          String    @default("pending")
 
+  expiresAt       DateTime?
   paidAt          DateTime?
   confirmedAt     DateTime?
   releasedAt      DateTime?

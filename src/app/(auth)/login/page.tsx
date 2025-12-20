@@ -6,6 +6,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { whatsappLinks } from "@/lib/config";
 
+interface ExtendedUser {
+  isAdmin?: boolean;
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -35,14 +39,14 @@ function LoginForm() {
         const sessionRes = await fetch("/api/auth/session");
         const session = await sessionRes.json();
 
-        if ((session?.user as any)?.isAdmin) {
+        if ((session?.user as ExtendedUser)?.isAdmin) {
           router.push("/admin");
         } else {
           router.push(callbackUrl);
         }
         router.refresh();
       }
-    } catch (err) {
+    } catch {
       setError("Erro ao fazer login. Tente novamente.");
     } finally {
       setLoading(false);

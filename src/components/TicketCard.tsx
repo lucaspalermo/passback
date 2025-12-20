@@ -3,7 +3,7 @@ import Link from "next/link";
 interface TicketCardProps {
   id: string;
   eventName: string;
-  eventDate: Date;
+  eventDate: Date | string;
   eventLocation: string;
   ticketType: string;
   price: number;
@@ -24,14 +24,14 @@ export default function TicketCard({
   originalPrice,
   imageUrl,
 }: TicketCardProps) {
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
     const d = new Date(date);
     const day = d.getDate();
     const month = d.toLocaleDateString("pt-BR", { month: "short" }).toUpperCase();
     return { day, month };
   };
 
-  const formatTime = (date: Date) => {
+  const formatTime = (date: Date | string) => {
     return new Date(date).toLocaleTimeString("pt-BR", {
       hour: "2-digit",
       minute: "2-digit",

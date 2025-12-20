@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { getWhatsAppLink } from "@/lib/config";
 
 interface WhatsAppRedirectProps {
@@ -14,24 +14,24 @@ export default function WhatsAppRedirect({
   message,
   shouldRedirect,
 }: WhatsAppRedirectProps) {
-  const [redirected, setRedirected] = useState(false);
+  const redirectedRef = useRef(false);
 
   useEffect(() => {
-    if (shouldRedirect && !redirected) {
+    if (shouldRedirect && !redirectedRef.current) {
+      redirectedRef.current = true;
+
       const cleanPhone = phone.replace(/\D/g, "");
       const formattedPhone = cleanPhone.startsWith("55")
         ? cleanPhone
         : `55${cleanPhone}`;
       const whatsappUrl = getWhatsAppLink(formattedPhone, message);
 
-      setRedirected(true);
-
       // Pequeno delay para garantir que a pagina carregou
       setTimeout(() => {
         window.open(whatsappUrl, "_blank");
       }, 1000);
     }
-  }, [shouldRedirect, phone, message, redirected]);
+  }, [shouldRedirect, phone, message]);
 
   return null;
 }

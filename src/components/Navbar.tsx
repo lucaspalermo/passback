@@ -4,10 +4,17 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useState } from "react";
 
+interface ExtendedUser {
+  id?: string;
+  name?: string | null;
+  email?: string | null;
+  isAdmin?: boolean;
+}
+
 export default function Navbar() {
   const { data: session, status } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const isAdmin = (session?.user as any)?.isAdmin;
+  const isAdmin = (session?.user as ExtendedUser)?.isAdmin;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0B1F33]/95 backdrop-blur-md border-b border-white/5">
@@ -38,12 +45,26 @@ export default function Navbar() {
                   Vender
                 </Link>
                 {status === "authenticated" && (
-                  <Link
-                    href="/minhas-compras"
-                    className="px-4 py-2 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                  >
-                    Minhas Compras
-                  </Link>
+                  <>
+                    <Link
+                      href="/meus-ingressos"
+                      className="px-4 py-2 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                    >
+                      Meus Ingressos
+                    </Link>
+                    <Link
+                      href="/minhas-compras"
+                      className="px-4 py-2 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                    >
+                      Minhas Compras
+                    </Link>
+                    <Link
+                      href="/perfil"
+                      className="px-4 py-2 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                    >
+                      Meu Perfil
+                    </Link>
+                  </>
                 )}
               </>
             )}

@@ -3,6 +3,13 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
 
+interface ExtendedUser {
+  id: string;
+  email: string;
+  name: string;
+  isAdmin: boolean;
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -52,14 +59,14 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.isAdmin = (user as any).isAdmin;
+        token.isAdmin = (user as ExtendedUser).isAdmin;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        (session.user as any).isAdmin = token.isAdmin;
+        (session.user as ExtendedUser).isAdmin = token.isAdmin as boolean;
       }
       return session;
     },

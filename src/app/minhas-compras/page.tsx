@@ -4,6 +4,7 @@ import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import Navbar from "@/components/Navbar";
+import PurchaseActions from "@/components/PurchaseActions";
 
 const statusConfig: Record<string, { label: string; bgColor: string; textColor: string; icon: string }> = {
   pending: { label: "Aguardando pagamento", bgColor: "bg-[#FF8A00]/10", textColor: "text-[#FF8A00]", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
@@ -12,6 +13,8 @@ const statusConfig: Record<string, { label: string; bgColor: string; textColor: 
   released: { label: "Finalizado", bgColor: "bg-[#16C784]/10", textColor: "text-[#16C784]", icon: "M5 13l4 4L19 7" },
   disputed: { label: "Em disputa", bgColor: "bg-red-500/10", textColor: "text-red-400", icon: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" },
   refunded: { label: "Reembolsado", bgColor: "bg-gray-500/10", textColor: "text-gray-400", icon: "M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" },
+  cancelled: { label: "Cancelado", bgColor: "bg-gray-500/10", textColor: "text-gray-400", icon: "M6 18L18 6M6 6l12 12" },
+  expired: { label: "Expirado", bgColor: "bg-gray-500/10", textColor: "text-gray-400", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
 };
 
 export default async function MinhasComprasPage() {
@@ -161,6 +164,13 @@ export default async function MinhasComprasPage() {
                         </Link>
                       </div>
                     </div>
+
+                    {/* Ações para transações pendentes */}
+                    <PurchaseActions
+                      transactionId={purchase.id}
+                      status={purchase.status}
+                      expiresAt={purchase.expiresAt}
+                    />
                   </div>
                 );
               })}

@@ -23,6 +23,35 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "12");
     const skip = (page - 1) * limit;
 
+    // Limpa transações expiradas e libera ingressos
+    const now = new Date();
+    const expiredTransactions = await prisma.transaction.findMany({
+      where: {
+        status: "pending",
+        expiresAt: { lt: now },
+      },
+      select: { id: true, ticketId: true },
+    });
+
+    if (expiredTransactions.length > 0) {
+      // Marca transações como expiradas
+      await prisma.transaction.updateMany({
+        where: {
+          id: { in: expiredTransactions.map(t => t.id) },
+        },
+        data: { status: "expired" },
+      });
+
+      // Libera os ingressos
+      await prisma.ticket.updateMany({
+        where: {
+          id: { in: expiredTransactions.map(t => t.ticketId) },
+          status: "reserved",
+        },
+        data: { status: "available" },
+      });
+    }
+
     const where = {
       status: "available",
       eventDate: { gte: new Date() },

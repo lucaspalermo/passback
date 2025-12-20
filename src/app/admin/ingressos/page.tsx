@@ -32,7 +32,7 @@ export default async function AdminIngressosPage() {
       seller: {
         select: { id: true, name: true, email: true, phone: true },
       },
-      transactions: {
+      transaction: {
         include: {
           buyer: { select: { name: true, email: true } },
         },
@@ -115,7 +115,7 @@ export default async function AdminIngressosPage() {
           <div className="space-y-4">
             {tickets.map((ticket) => {
               const statusInfo = statusConfig[ticket.status] || statusConfig.available;
-              const lastTransaction = ticket.transactions[0];
+              const lastTransaction = ticket.transaction;
 
               return (
                 <div

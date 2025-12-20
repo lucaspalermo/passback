@@ -40,6 +40,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verifica se há transações expiradas ou pendentes antigas e remove
+    const existingTransaction = await prisma.transaction.findFirst({
+      where: {
+        ticketId: ticket.id,
+      },
+    });
+
+    if (existingTransaction) {
+      const now = new Date();
+      const isExpired = existingTransaction.status === "expired" ||
+        (existingTransaction.status === "pending" && existingTransaction.expiresAt && new Date(existingTransaction.expiresAt) < now);
+
+      if (isExpired) {
+        // Deleta a transação expirada para permitir nova compra
+        await prisma.transaction.delete({
+          where: { id: existingTransaction.id },
+        });
+
+        // Libera o ingresso
+        await prisma.ticket.update({
+          where: { id: ticket.id },
+          data: { status: "available" },
+        });
+
+        // Atualiza o ticket local
+        ticket.status = "available";
+      } else if (existingTransaction.status === "pending") {
+        // Transação pendente ainda válida
+        return NextResponse.json(
+          { error: "Este ingresso já está sendo comprado por outra pessoa" },
+          { status: 400 }
+        );
+      } else if (["paid", "confirmed", "released"].includes(existingTransaction.status)) {
+        // Transação já concluída
+        return NextResponse.json(
+          { error: "Este ingresso já foi vendido" },
+          { status: 400 }
+        );
+      }
+    }
+
     if (ticket.status !== "available") {
       return NextResponse.json(
         { error: "Este ingresso nao esta mais disponivel" },
@@ -71,6 +112,9 @@ export async function POST(request: NextRequest) {
     const platformFee = amount * PLATFORM_FEE_PERCENTAGE;
     const sellerAmount = amount - platformFee;
 
+    // Define expiração em 5 minutos
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
     // Cria a transação
     const transaction = await prisma.transaction.create({
       data: {
@@ -78,6 +122,7 @@ export async function POST(request: NextRequest) {
         platformFee,
         sellerAmount,
         status: "pending",
+        expiresAt,
         ticketId: ticket.id,
         buyerId: session.user.id,
         sellerId: ticket.sellerId,
