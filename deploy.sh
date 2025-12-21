@@ -11,6 +11,9 @@ echo "=========================================="
 
 cd /var/www/passback
 
+# Configura diretorio como seguro para git
+git config --global --add safe.directory /var/www/passback
+
 echo "[1/6] Baixando alteracoes do GitHub..."
 if [ -d ".git" ]; then
     git fetch origin master

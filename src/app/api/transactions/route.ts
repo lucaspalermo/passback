@@ -40,10 +40,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verifica se há transações expiradas ou pendentes antigas e remove
+    // Verifica se há transações existentes
     const existingTransaction = await prisma.transaction.findFirst({
       where: {
         ticketId: ticket.id,
+      },
+      include: {
+        buyer: true,
       },
     });
 
@@ -67,7 +70,33 @@ export async function POST(request: NextRequest) {
         // Atualiza o ticket local
         ticket.status = "available";
       } else if (existingTransaction.status === "pending") {
-        // Transação pendente ainda válida
+        // Se é o mesmo comprador, gera novo link de pagamento
+        if (existingTransaction.buyerId === session.user.id) {
+          try {
+            const preference = await createPaymentPreference({
+              transactionId: existingTransaction.id,
+              ticketName: ticket.eventName,
+              ticketType: ticket.ticketType,
+              price: existingTransaction.amount,
+              buyerEmail: existingTransaction.buyer.email,
+              buyerName: existingTransaction.buyer.name,
+            });
+
+            return NextResponse.json({
+              transaction: existingTransaction,
+              checkoutUrl: preference.init_point,
+              preferenceId: preference.id,
+            });
+          } catch (mpError) {
+            console.error("Erro Mercado Pago:", mpError);
+            return NextResponse.json({
+              transaction: existingTransaction,
+              checkoutUrl: null,
+              message: "Pagamento sera configurado manualmente",
+            });
+          }
+        }
+        // Transação pendente de outro comprador
         return NextResponse.json(
           { error: "Este ingresso já está sendo comprado por outra pessoa" },
           { status: 400 }
@@ -78,6 +107,16 @@ export async function POST(request: NextRequest) {
           { error: "Este ingresso já foi vendido" },
           { status: 400 }
         );
+      } else if (existingTransaction.status === "cancelled" || existingTransaction.status === "refunded") {
+        // Transação cancelada ou reembolsada - pode deletar e criar nova
+        await prisma.transaction.delete({
+          where: { id: existingTransaction.id },
+        });
+        await prisma.ticket.update({
+          where: { id: ticket.id },
+          data: { status: "available" },
+        });
+        ticket.status = "available";
       }
     }
 

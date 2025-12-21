@@ -51,3 +51,4 @@ prisma/dev.db-journal
 
 # Deploy artifacts
 *.tar.gz
+.env.production
