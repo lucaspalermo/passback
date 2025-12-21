@@ -49,13 +49,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Atualiza a transação como confirmada
+    // Atualiza a transação como confirmada e liberada em uma única transação
+    const now = new Date();
     await prisma.$transaction([
       prisma.transaction.update({
         where: { id: transactionId },
         data: {
-          status: "confirmed",
-          confirmedAt: new Date(),
+          status: "released",
+          confirmedAt: now,
+          releasedAt: now,
         },
       }),
       prisma.ticket.update({
@@ -64,15 +66,8 @@ export async function POST(request: NextRequest) {
       }),
     ]);
 
-    // TODO: Aqui seria implementada a liberação do pagamento no Mercado Pago
-    // Por enquanto, apenas marcamos como liberado localmente
-    await prisma.transaction.update({
-      where: { id: transactionId },
-      data: {
-        status: "released",
-        releasedAt: new Date(),
-      },
-    });
+    // TODO: Implementar liberação do pagamento no Mercado Pago
+    // O vendedor receberá o valor automaticamente após período de retenção do MP
 
     return NextResponse.json({
       message: "Confirmacao realizada com sucesso! O pagamento foi liberado ao vendedor.",

@@ -117,6 +117,18 @@ export async function POST(request: NextRequest) {
           data: { status: "available" },
         });
         ticket.status = "available";
+      } else if (existingTransaction.status === "disputed") {
+        // Transação em disputa - não pode criar nova
+        return NextResponse.json(
+          { error: "Este ingresso está em disputa e não pode ser comprado" },
+          { status: 400 }
+        );
+      } else {
+        // Status desconhecido - retorna erro
+        return NextResponse.json(
+          { error: "Este ingresso não está disponível no momento" },
+          { status: 400 }
+        );
       }
     }
 
