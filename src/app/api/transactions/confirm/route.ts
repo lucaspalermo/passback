@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { releaseToAvailableBalance } from "@/lib/wallet";
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Atualiza a transação como confirmada e liberada em uma única transação
+    // Atualiza a transação como confirmada e liberada
     const now = new Date();
     await prisma.$transaction([
       prisma.transaction.update({
@@ -66,8 +67,14 @@ export async function POST(request: NextRequest) {
       }),
     ]);
 
-    // TODO: Implementar liberação do pagamento no Mercado Pago
-    // O vendedor receberá o valor automaticamente após período de retenção do MP
+    // Libera o saldo para a carteira do vendedor
+    await releaseToAvailableBalance(
+      transaction.sellerId,
+      transaction.sellerAmount,
+      transaction.id,
+      transaction.ticket?.eventName || "Ingresso",
+      "confirmed"
+    );
 
     return NextResponse.json({
       message: "Confirmacao realizada com sucesso! O pagamento foi liberado ao vendedor.",

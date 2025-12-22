@@ -29,6 +29,7 @@ model User {
   sales                     Transaction[]          @relation("SellerTransactions")
   disputes                  Dispute[]              @relation("UserDisputes")
   reputation                UserReputation?
+  wallet                    Wallet?
 
   // Modulos
   chatConversationsAsBuyer  ChatConversation[]     @relation("ChatBuyer")
@@ -506,4 +507,66 @@ model TicketView {
   @@index([ticketId])
   @@index([viewerId])
   @@index([createdAt])
+}
+
+// MODULO: CARTEIRA E SAQUE
+model Wallet {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  availableBalance Float    @default(0) // Saldo disponivel para saque
+  pendingBalance   Float    @default(0) // Saldo pendente (aguardando liberacao)
+  totalEarned      Float    @default(0) // Total ganho historico
+  totalWithdrawn   Float    @default(0) // Total sacado historico
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             User               @relation(fields: [userId], references: [id])
+  transactions     WalletTransaction[]
+  withdrawals      Withdrawal[]
+
+  @@index([userId])
+}
+
+model WalletTransaction {
+  id            String   @id @default(cuid())
+  walletId      String
+  type          String   // credit, debit, pending_credit, pending_to_available
+  amount        Float
+  description   String
+  referenceType String?  // transaction, withdrawal, adjustment
+  referenceId   String?  // ID da transacao ou saque relacionado
+  balanceBefore Float
+  balanceAfter  Float
+  createdAt     DateTime @default(now())
+
+  wallet        Wallet   @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([referenceType, referenceId])
+  @@index([createdAt])
+}
+
+model Withdrawal {
+  id            String    @id @default(cuid())
+  walletId      String
+  amount        Float
+  pixKey        String    // Chave PIX para deposito
+  pixKeyType    String    // cpf, email, phone, random
+  status        String    @default("pending") // pending, processing, completed, rejected
+  requestedAt   DateTime  @default(now())
+  processedAt   DateTime? // Quando admin iniciou processamento
+  completedAt   DateTime? // Quando admin confirmou deposito
+  rejectedAt    DateTime?
+  rejectionReason String?
+  proofUrl      String?   // Comprovante de deposito (opcional)
+  processedBy   String?   // ID do admin que processou
+  notes         String?   // Observacoes do admin
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  wallet        Wallet    @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([status])
+  @@index([requestedAt])
 }

@@ -38,7 +38,7 @@ export default async function AdminDashboardPage() {
   }
 
   // Get all data
-  const [transactions, disputes, users] = await Promise.all([
+  const [transactions, disputes, users, pendingWithdrawals] = await Promise.all([
     prisma.transaction.findMany({
       include: {
         ticket: true,
@@ -63,11 +63,13 @@ export default async function AdminDashboardPage() {
       orderBy: { createdAt: "desc" },
     }),
     prisma.user.count(),
+    prisma.withdrawal.count({ where: { status: "pending" } }),
   ]);
 
   // Calculate stats
   const stats = {
     totalUsers: users,
+    pendingWithdrawals,
     totalTransactions: transactions.length,
     totalVolume: transactions.reduce((acc, t) => acc + t.amount, 0),
     totalFees: transactions.filter(t => t.status === "released").reduce((acc, t) => acc + t.platformFee, 0),
@@ -118,7 +120,7 @@ export default async function AdminDashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
           <div className="bg-[#0F2A44] rounded-xl p-4 border border-white/5">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-lg bg-[#16C784]/10 flex items-center justify-center">
@@ -191,6 +193,19 @@ export default async function AdminDashboardPage() {
             </div>
             <p className="text-xl font-bold text-red-400">{stats.openDisputes}</p>
           </div>
+
+          <Link href="/admin/saques" className="bg-[#0F2A44] rounded-xl p-4 border border-white/5 border-yellow-500/30 hover:bg-[#1A3A5C] transition-colors">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                <svg className="w-4 h-4 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <span className="text-xs text-gray-400">Saques Pendentes</span>
+              {stats.pendingWithdrawals > 0 && <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>}
+            </div>
+            <p className="text-xl font-bold text-yellow-400">{stats.pendingWithdrawals}</p>
+          </Link>
         </div>
 
         {/* Disputes Section - Priority */}

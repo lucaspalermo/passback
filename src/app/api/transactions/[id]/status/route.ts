@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
+import { creditPendingBalance } from "@/lib/wallet";
 
 // Pega a API key do Asaas
 function getAsaasApiKey(): string {
@@ -108,7 +109,15 @@ export async function GET(
             data: { status: "sold" },
           });
 
-          console.log("[Status] Transacao atualizada para PAID");
+          // Credita valor pendente na carteira do vendedor
+          await creditPendingBalance(
+            transaction.sellerId,
+            transaction.sellerAmount,
+            transaction.id,
+            transaction.ticket?.eventName || "Ingresso"
+          );
+
+          console.log("[Status] Transacao atualizada para PAID e valor creditado na carteira");
 
           return NextResponse.json({
             status: "paid",

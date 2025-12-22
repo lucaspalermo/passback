@@ -217,6 +217,16 @@ export default function Navbar() {
                             Minhas Vendas
                           </Link>
                           <Link
+                            href="/carteira"
+                            onClick={() => setIsMenuOpen(false)}
+                            className="flex items-center gap-3 px-3 py-2 text-green-400 hover:text-green-300 hover:bg-green-500/10 rounded-lg transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            Carteira
+                          </Link>
+                          <Link
                             href="/favoritos"
                             onClick={() => setIsMenuOpen(false)}
                             className="flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
