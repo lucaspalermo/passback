@@ -21,16 +21,21 @@ export default async function MinhasVendasPage() {
     redirect("/login");
   }
 
-  const sales = await prisma.transaction.findMany({
-    where: { sellerId: session.user.id },
-    orderBy: { createdAt: "desc" },
-    include: {
-      ticket: true,
-      buyer: {
-        select: { name: true },
+  const [sales, wallet] = await Promise.all([
+    prisma.transaction.findMany({
+      where: { sellerId: session.user.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        ticket: true,
+        buyer: {
+          select: { name: true },
+        },
       },
-    },
-  });
+    }),
+    prisma.wallet.findUnique({
+      where: { userId: session.user.id },
+    }),
+  ]);
 
   const stats = {
     total: sales.length,
@@ -66,6 +71,39 @@ export default async function MinhasVendasPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-white">Minhas Vendas</h1>
             <p className="text-gray-400 mt-1">Acompanhe suas vendas e ganhos</p>
           </div>
+
+          {/* Wallet Card */}
+          <Link
+            href="/carteira"
+            className="block bg-gradient-to-r from-[#16C784]/20 to-[#2DFF88]/10 rounded-2xl p-6 border border-[#16C784]/30 mb-6 hover:border-[#16C784]/50 transition-all group"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-[#16C784]/20 flex items-center justify-center">
+                  <svg className="w-7 h-7 text-[#16C784]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">Saldo disponivel para saque</p>
+                  <p className="text-3xl font-bold text-[#16C784]">
+                    {formatPrice(wallet?.availableBalance || 0)}
+                  </p>
+                  {(wallet?.pendingBalance || 0) > 0 && (
+                    <p className="text-sm text-yellow-400 mt-1">
+                      + {formatPrice(wallet?.pendingBalance || 0)} pendente
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-[#16C784] group-hover:translate-x-1 transition-transform">
+                <span className="font-medium">Sacar agora</span>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </div>
+            </div>
+          </Link>
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
