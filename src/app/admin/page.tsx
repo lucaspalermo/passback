@@ -321,7 +321,7 @@ export default async function AdminDashboardPage() {
                             </Link>
                           ) : (
                             <Link
-                              href={`/compra/${t.id}`}
+                              href={`/admin/transacoes/${t.id}`}
                               className="text-[#16C784] hover:underline text-xs"
                             >
                               Detalhes
