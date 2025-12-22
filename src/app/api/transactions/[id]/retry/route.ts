@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
-import { createPaymentPreference } from "@/lib/mercadopago";
+import {
+  getOrCreateCustomer,
+  createPayment,
+  getPixQrCode,
+} from "@/lib/asaas";
 
 export async function POST(
   request: NextRequest,
@@ -71,25 +75,56 @@ export async function POST(
       );
     }
 
-    // Recria a preferência de pagamento no Mercado Pago
+    // Verifica se o comprador tem CPF
+    if (!transaction.buyer.cpf) {
+      return NextResponse.json(
+        { error: "Voce precisa cadastrar seu CPF no perfil para comprar" },
+        { status: 400 }
+      );
+    }
+
+    // Recria o pagamento no Asaas
     try {
-      const preference = await createPaymentPreference({
-        transactionId: transaction.id,
-        ticketName: transaction.ticket.eventName,
-        ticketType: transaction.ticket.ticketType,
-        price: transaction.amount,
-        buyerEmail: transaction.buyer.email,
-        buyerName: transaction.buyer.name,
+      // Cria/busca cliente no Asaas
+      const customer = await getOrCreateCustomer({
+        name: transaction.buyer.name,
+        email: transaction.buyer.email,
+        cpfCnpj: transaction.buyer.cpf,
+        phone: transaction.buyer.phone || undefined,
       });
+
+      // Atualiza o ID do cliente no usuário se não tiver
+      if (!transaction.buyer.asaasCustomerId) {
+        await prisma.user.update({
+          where: { id: transaction.buyerId },
+          data: { asaasCustomerId: customer.id },
+        });
+      }
+
+      // Cria nova cobrança PIX
+      const payment = await createPayment({
+        customerId: customer.id,
+        value: transaction.amount,
+        description: `Ingresso: ${transaction.ticket.eventName} - ${transaction.ticket.ticketType}`,
+        externalReference: transaction.id,
+        billingType: "PIX",
+      });
+
+      // Obtém QR Code PIX
+      const pixQrCode = await getPixQrCode(payment.id);
 
       return NextResponse.json({
         success: true,
-        checkoutUrl: preference.init_point,
-        preferenceId: preference.id,
+        paymentId: payment.id,
+        pixQrCode: {
+          encodedImage: pixQrCode.encodedImage,
+          payload: pixQrCode.payload,
+          expirationDate: pixQrCode.expirationDate,
+        },
         expiresAt: transaction.expiresAt,
       });
-    } catch (mpError) {
-      console.error("Erro ao criar preferencia Mercado Pago:", mpError);
+    } catch (asaasError) {
+      console.error("Erro ao criar pagamento Asaas:", asaasError);
       return NextResponse.json(
         { error: "Erro ao gerar link de pagamento" },
         { status: 500 }

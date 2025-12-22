@@ -2,10 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import PixQrCode from "@/components/PixQrCode";
 
 interface BuyButtonProps {
   ticketId: string;
   price: number;
+}
+
+interface PixQrCodeData {
+  encodedImage: string;
+  payload: string;
+  expirationDate: string;
 }
 
 export default function BuyButton({ ticketId, price }: BuyButtonProps) {
@@ -13,17 +20,21 @@ export default function BuyButton({ ticketId, price }: BuyButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [transactionId, setTransactionId] = useState<string | null>(null);
+  const [pixQrCode, setPixQrCode] = useState<PixQrCodeData | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"PIX" | "CREDIT_CARD">("PIX");
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
   const [showSimulate, setShowSimulate] = useState(false);
 
-  const handleBuy = async () => {
+  const handleBuy = async (method: "PIX" | "CREDIT_CARD" = "PIX") => {
     setLoading(true);
     setError("");
+    setPaymentMethod(method);
 
     try {
       const response = await fetch("/api/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticketId }),
+        body: JSON.stringify({ ticketId, paymentMethod: method }),
       });
 
       const data = await response.json();
@@ -33,12 +44,19 @@ export default function BuyButton({ ticketId, price }: BuyButtonProps) {
         return;
       }
 
-      // Redireciona para o checkout do Mercado Pago
+      setTransactionId(data.transaction.id);
+
+      // Para cartão de crédito, redireciona para checkout Asaas
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
+        return;
+      }
+
+      // Para PIX, exibe o QR Code
+      if (data.pixQrCode) {
+        setPixQrCode(data.pixQrCode);
       } else {
-        // Sem Mercado Pago configurado - mostrar opcao de simular
-        setTransactionId(data.transaction.id);
+        // Sem Asaas configurado - mostrar opção de simular
         setShowSimulate(true);
       }
     } catch {
@@ -73,6 +91,38 @@ export default function BuyButton({ ticketId, price }: BuyButtonProps) {
     }
   };
 
+  const handlePixExpired = () => {
+    setPixQrCode(null);
+    setError("O QR Code expirou. Clique em 'Tentar novamente' para gerar um novo.");
+  };
+
+  const handleRetry = async () => {
+    if (!transactionId) return;
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/transactions/${transactionId}/retry`, {
+        method: "POST",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Erro ao gerar novo pagamento");
+        return;
+      }
+
+      if (data.pixQrCode) {
+        setPixQrCode(data.pixQrCode);
+      }
+    } catch {
+      setError("Erro ao gerar novo pagamento");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatPrice = (value: number) => {
     return value.toLocaleString("pt-BR", {
       style: "currency",
@@ -80,6 +130,37 @@ export default function BuyButton({ ticketId, price }: BuyButtonProps) {
     });
   };
 
+  // Se tem QR Code PIX, mostra ele
+  if (pixQrCode) {
+    return (
+      <div className="space-y-4">
+        <PixQrCode
+          encodedImage={pixQrCode.encodedImage}
+          payload={pixQrCode.payload}
+          expirationDate={pixQrCode.expirationDate}
+          onExpired={handlePixExpired}
+        />
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => router.push(`/compra/${transactionId}`)}
+            className="flex-1 py-3 rounded-xl font-medium text-gray-300 border border-white/10 hover:bg-white/5 transition-all"
+          >
+            Ver detalhes
+          </button>
+          <button
+            onClick={handleRetry}
+            disabled={loading}
+            className="flex-1 py-3 rounded-xl font-medium text-[#16C784] border border-[#16C784]/30 hover:bg-[#16C784]/10 transition-all disabled:opacity-50"
+          >
+            {loading ? "Gerando..." : "Novo QR Code"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Modo de simulação (desenvolvimento)
   if (showSimulate) {
     return (
       <div className="space-y-3">
@@ -91,7 +172,7 @@ export default function BuyButton({ ticketId, price }: BuyButtonProps) {
             Modo de Teste
           </p>
           <p className="text-yellow-300/80 text-sm">
-            Mercado Pago nao configurado. Clique abaixo para simular.
+            Asaas nao configurado. Clique abaixo para simular.
           </p>
         </div>
         <button
@@ -121,6 +202,71 @@ export default function BuyButton({ ticketId, price }: BuyButtonProps) {
     );
   }
 
+  // Opções de pagamento
+  if (showPaymentOptions) {
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-gray-400 text-center mb-2">Escolha a forma de pagamento:</p>
+
+        {/* PIX */}
+        <button
+          onClick={() => handleBuy("PIX")}
+          disabled={loading}
+          className="w-full py-4 rounded-xl font-semibold text-white bg-[#16C784] hover:bg-[#14b576] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+        >
+          {loading && paymentMethod === "PIX" ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Processando...
+            </span>
+          ) : (
+            <>
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm13-2h1v1h-1v-1zm-2 0h1v1h-1v-1zm2 2h1v1h-1v-1zm-2 2h1v3h-1v-3zm4-2v4h-1v-1h-1v-1h2zm0-2h1v2h-1v-2z" />
+              </svg>
+              PIX - {formatPrice(price)}
+            </>
+          )}
+        </button>
+
+        {/* Cartão de Crédito */}
+        <button
+          onClick={() => handleBuy("CREDIT_CARD")}
+          disabled={loading}
+          className="w-full py-4 rounded-xl font-semibold text-white bg-[#0F2A44] border border-white/10 hover:bg-[#1A3A5C] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+        >
+          {loading && paymentMethod === "CREDIT_CARD" ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Processando...
+            </span>
+          ) : (
+            <>
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              Cartao de Credito - {formatPrice(price)}
+            </>
+          )}
+        </button>
+
+        <button
+          onClick={() => setShowPaymentOptions(false)}
+          className="w-full py-2 text-sm text-gray-400 hover:text-white transition-colors"
+        >
+          Voltar
+        </button>
+      </div>
+    );
+  }
+
+  // Botão inicial
   return (
     <div className="space-y-3">
       {error && (
@@ -132,7 +278,7 @@ export default function BuyButton({ ticketId, price }: BuyButtonProps) {
         </div>
       )}
       <button
-        onClick={handleBuy}
+        onClick={() => setShowPaymentOptions(true)}
         disabled={loading}
         className="w-full btn-gradient py-4 rounded-xl font-semibold text-white text-lg disabled:opacity-50 disabled:cursor-not-allowed"
       >
@@ -149,7 +295,7 @@ export default function BuyButton({ ticketId, price }: BuyButtonProps) {
         )}
       </button>
       <p className="text-xs text-gray-500 text-center">
-        Pagamento seguro via Mercado Pago
+        Pagamento seguro via PIX ou Cartao de Credito
       </p>
     </div>
   );

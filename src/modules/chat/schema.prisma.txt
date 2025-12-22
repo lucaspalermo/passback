@@ -1,0 +1,73 @@
+// ============================================
+// SCHEMA PRISMA PARA MÓDULO DE CHAT
+// ============================================
+// Adicione este conteúdo ao seu prisma/schema.prisma
+// quando ativar o módulo de chat
+// ============================================
+
+model ChatConversation {
+  id            String   @id @default(cuid())
+  transactionId String   @unique
+  buyerId       String
+  sellerId      String
+  status        String   @default("active") // active, closed, blocked
+  lastMessageAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relações
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  buyer         User        @relation("ChatBuyer", fields: [buyerId], references: [id])
+  seller        User        @relation("ChatSeller", fields: [sellerId], references: [id])
+  messages      ChatMessage[]
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([lastMessageAt])
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String   @db.Text
+  readAt         DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relações
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User             @relation(fields: [senderId], references: [id])
+  attachments    ChatAttachment[]
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+model ChatAttachment {
+  id        String   @id @default(cuid())
+  messageId String
+  type      String   // image, pdf
+  url       String
+  filename  String
+  size      Int
+  createdAt DateTime @default(now())
+
+  // Relações
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+// ============================================
+// Adicione estas relações ao model User:
+// ============================================
+// chatConversationsAsBuyer  ChatConversation[] @relation("ChatBuyer")
+// chatConversationsAsSeller ChatConversation[] @relation("ChatSeller")
+// chatMessages              ChatMessage[]
+
+// ============================================
+// Adicione esta relação ao model Transaction:
+// ============================================
+// chatConversation ChatConversation?

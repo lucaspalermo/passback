@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
-import { createPaymentPreference } from "@/lib/mercadopago";
+import {
+  getOrCreateCustomer,
+  createPayment,
+  getPixQrCode,
+  createPaymentLink,
+} from "@/lib/asaas";
 
 const PLATFORM_FEE_PERCENTAGE = 0.10; // 10%
 
@@ -18,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { ticketId } = body;
+    const { ticketId, paymentMethod = "PIX" } = body;
 
     if (!ticketId) {
       return NextResponse.json(
@@ -70,29 +75,60 @@ export async function POST(request: NextRequest) {
         // Atualiza o ticket local
         ticket.status = "available";
       } else if (existingTransaction.status === "pending") {
-        // Se é o mesmo comprador, gera novo link de pagamento
+        // Se é o mesmo comprador, gera novo pagamento
         if (existingTransaction.buyerId === session.user.id) {
           try {
-            const preference = await createPaymentPreference({
-              transactionId: existingTransaction.id,
-              ticketName: ticket.eventName,
-              ticketType: ticket.ticketType,
-              price: existingTransaction.amount,
-              buyerEmail: existingTransaction.buyer.email,
-              buyerName: existingTransaction.buyer.name,
+            // Verifica se o comprador tem CPF
+            if (!existingTransaction.buyer.cpf) {
+              return NextResponse.json(
+                { error: "Voce precisa cadastrar seu CPF no perfil para comprar" },
+                { status: 400 }
+              );
+            }
+
+            // Cria/busca cliente no Asaas
+            const customer = await getOrCreateCustomer({
+              name: existingTransaction.buyer.name,
+              email: existingTransaction.buyer.email,
+              cpfCnpj: existingTransaction.buyer.cpf,
+              phone: existingTransaction.buyer.phone || undefined,
             });
+
+            // Atualiza o ID do cliente no usuário se não tiver
+            if (!existingTransaction.buyer.asaasCustomerId) {
+              await prisma.user.update({
+                where: { id: existingTransaction.buyerId },
+                data: { asaasCustomerId: customer.id },
+              });
+            }
+
+            // Cria cobrança PIX
+            const payment = await createPayment({
+              customerId: customer.id,
+              value: existingTransaction.amount,
+              description: `Ingresso: ${ticket.eventName} - ${ticket.ticketType}`,
+              externalReference: existingTransaction.id,
+              billingType: "PIX",
+            });
+
+            // Obtém QR Code PIX
+            const pixQrCode = await getPixQrCode(payment.id);
 
             return NextResponse.json({
               transaction: existingTransaction,
-              checkoutUrl: preference.init_point,
-              preferenceId: preference.id,
+              paymentId: payment.id,
+              pixQrCode: {
+                encodedImage: pixQrCode.encodedImage,
+                payload: pixQrCode.payload,
+                expirationDate: pixQrCode.expirationDate,
+              },
             });
-          } catch (mpError) {
-            console.error("Erro Mercado Pago:", mpError);
+          } catch (asaasError) {
+            console.error("Erro Asaas:", asaasError);
             return NextResponse.json({
               transaction: existingTransaction,
-              checkoutUrl: null,
-              message: "Pagamento sera configurado manualmente",
+              pixQrCode: null,
+              message: "Erro ao gerar pagamento. Tente novamente.",
             });
           }
         }
@@ -158,13 +194,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verifica se o comprador tem CPF cadastrado
+    if (!buyer.cpf) {
+      return NextResponse.json(
+        { error: "Voce precisa cadastrar seu CPF no perfil para comprar" },
+        { status: 400 }
+      );
+    }
+
     // Calcula taxas
     const amount = ticket.price;
     const platformFee = amount * PLATFORM_FEE_PERCENTAGE;
     const sellerAmount = amount - platformFee;
 
-    // Define expiração em 5 minutos
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    // Define expiração em 30 minutos (tempo para pagar PIX)
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
     // Cria a transação
     const transaction = await prisma.transaction.create({
@@ -186,30 +230,72 @@ export async function POST(request: NextRequest) {
       data: { status: "reserved" },
     });
 
-    // Cria preferência de pagamento no Mercado Pago
+    // Cria cliente e pagamento no Asaas
     try {
-      const preference = await createPaymentPreference({
-        transactionId: transaction.id,
-        ticketName: ticket.eventName,
-        ticketType: ticket.ticketType,
-        price: amount,
-        buyerEmail: buyer.email,
-        buyerName: buyer.name,
+      // Cria/busca cliente no Asaas
+      const customer = await getOrCreateCustomer({
+        name: buyer.name,
+        email: buyer.email,
+        cpfCnpj: buyer.cpf,
+        phone: buyer.phone || undefined,
       });
+
+      // Atualiza o ID do cliente no usuário se não tiver
+      if (!buyer.asaasCustomerId) {
+        await prisma.user.update({
+          where: { id: buyer.id },
+          data: { asaasCustomerId: customer.id },
+        });
+      }
+
+      // Verifica o método de pagamento
+      if (paymentMethod === "CREDIT_CARD") {
+        // Para cartão, cria um link de pagamento
+        const paymentLink = await createPaymentLink({
+          name: `Ingresso: ${ticket.eventName}`,
+          description: `${ticket.ticketType} - ${ticket.eventLocation}`,
+          value: amount,
+          billingType: "CREDIT_CARD",
+          externalReference: transaction.id,
+        });
+
+        return NextResponse.json({
+          transaction,
+          checkoutUrl: paymentLink.url,
+          paymentMethod: "CREDIT_CARD",
+        });
+      }
+
+      // Para PIX, cria cobrança direta
+      const payment = await createPayment({
+        customerId: customer.id,
+        value: amount,
+        description: `Ingresso: ${ticket.eventName} - ${ticket.ticketType}`,
+        externalReference: transaction.id,
+        billingType: "PIX",
+      });
+
+      // Obtém QR Code PIX
+      const pixQrCode = await getPixQrCode(payment.id);
 
       return NextResponse.json({
         transaction,
-        checkoutUrl: preference.init_point,
-        preferenceId: preference.id,
+        paymentId: payment.id,
+        paymentMethod: "PIX",
+        pixQrCode: {
+          encodedImage: pixQrCode.encodedImage,
+          payload: pixQrCode.payload,
+          expirationDate: pixQrCode.expirationDate,
+        },
       });
-    } catch (mpError) {
-      console.error("Erro Mercado Pago:", mpError);
+    } catch (asaasError) {
+      console.error("Erro Asaas:", asaasError);
 
-      // Se falhar no MP, ainda retorna a transação para fluxo manual
+      // Se falhar no Asaas, ainda retorna a transação para fluxo manual
       return NextResponse.json({
         transaction,
-        checkoutUrl: null,
-        message: "Pagamento sera configurado manualmente",
+        pixQrCode: null,
+        message: "Erro ao gerar pagamento. Tente novamente.",
       });
     }
   } catch (error) {

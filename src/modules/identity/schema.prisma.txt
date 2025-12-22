@@ -1,0 +1,37 @@
+// ============================================
+// SCHEMA PRISMA PARA MÓDULO DE IDENTIDADE
+// ============================================
+// Adicione este conteúdo ao seu prisma/schema.prisma
+// quando ativar o módulo de verificação
+// ============================================
+
+model IdentityVerification {
+  id               String    @id @default(cuid())
+  userId           String
+  status           String    @default("pending") // pending, under_review, approved, rejected, expired
+  documentType     String    // rg, cnh, passport
+  documentNumber   String?
+  documentFrontUrl String
+  documentBackUrl  String?
+  selfieUrl        String
+  rejectionReason  String?
+  reviewedBy       String?
+  verifiedAt       DateTime?
+  expiresAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relações
+  user             User      @relation(fields: [userId], references: [id])
+  reviewer         User?     @relation("IdentityReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================
+// Adicione ao model User:
+// ============================================
+// isIdentityVerified     Boolean              @default(false)
+// identityVerifications  IdentityVerification[]
+// reviewedVerifications  IdentityVerification[] @relation("IdentityReviewer")

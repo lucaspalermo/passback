@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         where: { id: transactionId },
         data: {
           status: "paid",
-          mercadoPagoId: "TESTE-" + Date.now(),
+          asaasPaymentId: "TESTE-" + Date.now(),
           paymentMethod: "pix",
           paidAt: new Date(),
         },

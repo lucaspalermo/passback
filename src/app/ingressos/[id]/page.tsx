@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import BuyButton from "./BuyButton";
+import FavoriteWrapper from "./FavoriteWrapper";
 
 interface TicketPageProps {
   params: Promise<{ id: string }>;
@@ -91,8 +92,8 @@ export default async function TicketPage({ params }: TicketPageProps) {
 
         <div className={`absolute inset-0 ${ticket.imageUrl ? "bg-black/50" : "bg-black/20"}`} />
 
-        {/* Voltar */}
-        <div className="absolute top-4 left-4 z-10">
+        {/* Voltar e Favorito */}
+        <div className="absolute top-4 left-4 z-10 flex items-center gap-3">
           <Link
             href="/"
             className="flex items-center gap-2 bg-black/30 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm hover:bg-black/40 transition-all"
@@ -102,6 +103,7 @@ export default async function TicketPage({ params }: TicketPageProps) {
             </svg>
             Voltar
           </Link>
+          <FavoriteWrapper ticketId={ticket.id} />
         </div>
 
         {/* Badge de Status */}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import FavoriteButton from "./FavoriteButton";
 
 interface TicketCardProps {
   id: string;
@@ -82,14 +83,15 @@ export default function TicketCard({
           {/* Overlay escuro para legibilidade */}
           {imageUrl && <div className="absolute inset-0 bg-black/40" />}
 
-          {/* Badge de desconto */}
-          {discount > 0 && (
-            <div className="absolute top-3 right-3 z-10">
+          {/* Favoritos e Badge de desconto */}
+          <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+            <FavoriteButton ticketId={id} size="sm" />
+            {discount > 0 && (
               <span className="discount-badge px-2.5 py-1 rounded-full text-xs font-bold text-white">
                 -{discount}%
               </span>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Badge de tipo */}
           <div className="absolute bottom-3 left-3 z-10">

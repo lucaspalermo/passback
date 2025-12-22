@@ -9,23 +9,45 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String
-  password      String
-  phone         String?
-  cpf           String?
-  pixKey        String?
-  verified      Boolean   @default(false)
-  isAdmin       Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  name                String
+  password            String
+  phone               String?
+  cpf                 String?
+  pixKey              String?
+  image               String?
+  asaasCustomerId     String?   // ID do cliente no Asaas
+  verified            Boolean   @default(false)
+  isAdmin             Boolean   @default(false)
+  isIdentityVerified  Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  ticketsForSale  Ticket[]        @relation("SellerTickets")
-  purchases       Transaction[]   @relation("BuyerTransactions")
-  sales           Transaction[]   @relation("SellerTransactions")
-  disputes        Dispute[]       @relation("UserDisputes")
-  reputation      UserReputation?
+  ticketsForSale            Ticket[]               @relation("SellerTickets")
+  purchases                 Transaction[]          @relation("BuyerTransactions")
+  sales                     Transaction[]          @relation("SellerTransactions")
+  disputes                  Dispute[]              @relation("UserDisputes")
+  reputation                UserReputation?
+
+  // Modulos
+  chatConversationsAsBuyer  ChatConversation[]     @relation("ChatBuyer")
+  chatConversationsAsSeller ChatConversation[]     @relation("ChatSeller")
+  chatMessages              ChatMessage[]
+  identityVerifications     IdentityVerification[]
+  reviewedVerifications     IdentityVerification[] @relation("IdentityReviewer")
+  reviewsWritten            Review[]               @relation("ReviewAuthor")
+  reviewsReceived           Review[]               @relation("ReviewTarget")
+  couponUsages              CouponUsage[]
+  favorites                 Favorite[]
+  entryQrValidations        EntryQrCode[]          @relation("QrValidator")
+  transfersSent             TicketTransfer[]       @relation("TransferFrom")
+  transfersReceived         TicketTransfer[]       @relation("TransferTo")
+  offersSent                Offer[]                @relation("OfferBuyer")
+  offersReceived            Offer[]                @relation("OfferSeller")
+  waitlistEntries           WaitlistEntry[]
+  suspiciousActivities      SuspiciousActivity[]
+  ticketViews               TicketView[]           @relation("TicketViewer")
 }
 
 model Ticket {
@@ -45,6 +67,10 @@ model Ticket {
   sellerId      String
   seller        User      @relation("SellerTickets", fields: [sellerId], references: [id])
   transaction   Transaction?
+  favorites     Favorite[]
+  chatConversations ChatConversation[]
+  offers        Offer[]
+  views         TicketView[]
 }
 
 model Transaction {
@@ -52,7 +78,7 @@ model Transaction {
   amount          Float
   platformFee     Float
   sellerAmount    Float
-  mercadoPagoId   String?
+  asaasPaymentId  String?   // ID do pagamento no Asaas
   paymentMethod   String?
   status          String    @default("pending")
 
@@ -72,7 +98,12 @@ model Transaction {
   sellerId        String
   seller          User      @relation("SellerTransactions", fields: [sellerId], references: [id])
 
-  dispute         Dispute?
+  dispute          Dispute?
+  chatConversations ChatConversation[]
+  reviews          Review[]
+  couponUsage      CouponUsage?
+  entryQrCode      EntryQrCode?
+  transfers        TicketTransfer[]
 }
 
 model Dispute {
@@ -144,4 +175,335 @@ model UserReputation {
 
   userId              String   @unique
   user                User     @relation(fields: [userId], references: [id])
+}
+
+// =============================================
+// MODULOS PASSBACK
+// =============================================
+
+// MODULO: CHAT
+model ChatConversation {
+  id            String    @id @default(cuid())
+  ticketId      String
+  transactionId String?
+  buyerId       String
+  sellerId      String
+  status        String    @default("active")
+  lastMessageAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  ticket        Ticket       @relation(fields: [ticketId], references: [id])
+  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+  buyer         User         @relation("ChatBuyer", fields: [buyerId], references: [id])
+  seller        User         @relation("ChatSeller", fields: [sellerId], references: [id])
+  messages      ChatMessage[]
+
+  @@unique([ticketId, buyerId, sellerId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([lastMessageAt])
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  readAt         DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User             @relation(fields: [senderId], references: [id])
+  attachments    ChatAttachment[]
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+model ChatAttachment {
+  id        String   @id @default(cuid())
+  messageId String
+  type      String
+  url       String
+  filename  String
+  size      Int
+  createdAt DateTime @default(now())
+
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+// MODULO: VERIFICACAO DE IDENTIDADE
+model IdentityVerification {
+  id               String    @id @default(cuid())
+  userId           String
+  status           String    @default("pending")
+  documentType     String
+  documentNumber   String?
+  documentFrontUrl String
+  documentBackUrl  String?
+  selfieUrl        String
+  rejectionReason  String?
+  reviewedBy       String?
+  verifiedAt       DateTime?
+  expiresAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user             User      @relation(fields: [userId], references: [id])
+  reviewer         User?     @relation("IdentityReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+// MODULO: AVALIACOES
+model Review {
+  id            String   @id @default(cuid())
+  transactionId String
+  reviewerId    String
+  reviewedId    String
+  rating        Int
+  comment       String?
+  type          String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  reviewer      User        @relation("ReviewAuthor", fields: [reviewerId], references: [id])
+  reviewed      User        @relation("ReviewTarget", fields: [reviewedId], references: [id])
+
+  @@unique([transactionId, type])
+  @@index([reviewedId])
+}
+
+// MODULO: CUPONS
+model Coupon {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  type        String
+  value       Float
+  minAmount   Float?
+  maxUses     Int?
+  usedCount   Int       @default(0)
+  validFrom   DateTime
+  validUntil  DateTime
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  usages      CouponUsage[]
+
+  @@index([code])
+  @@index([validUntil])
+}
+
+model CouponUsage {
+  id            String   @id @default(cuid())
+  couponId      String
+  userId        String
+  transactionId String   @unique
+  discount      Float
+  createdAt     DateTime @default(now())
+
+  coupon        Coupon      @relation(fields: [couponId], references: [id])
+  user          User        @relation(fields: [userId], references: [id])
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+
+  @@unique([couponId, userId])
+}
+
+// MODULO: FAVORITOS
+model Favorite {
+  id         String    @id @default(cuid())
+  userId     String
+  ticketId   String?
+  eventName  String?
+  alertPrice Float?
+  createdAt  DateTime  @default(now())
+
+  user       User      @relation(fields: [userId], references: [id])
+  ticket     Ticket?   @relation(fields: [ticketId], references: [id])
+
+  @@unique([userId, ticketId])
+  @@index([userId])
+  @@index([eventName])
+}
+
+// MODULO: QR CODE DE ENTRADA
+model EntryQrCode {
+  id            String    @id @default(cuid())
+  transactionId String    @unique
+  code          String    @unique
+  isUsed        Boolean   @default(false)
+  usedAt        DateTime?
+  usedBy        String?
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  validator     User?       @relation("QrValidator", fields: [usedBy], references: [id])
+
+  @@index([code])
+}
+
+// MODULO: TRANSFERENCIA DE INGRESSO
+model TicketTransfer {
+  id            String    @id @default(cuid())
+  transactionId String
+  fromUserId    String
+  toUserId      String?
+  toEmail       String
+  status        String    @default("pending")
+  transferCode  String    @unique
+  acceptedAt    DateTime?
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  fromUser      User        @relation("TransferFrom", fields: [fromUserId], references: [id])
+  toUser        User?       @relation("TransferTo", fields: [toUserId], references: [id])
+
+  @@index([transactionId])
+  @@index([transferCode])
+  @@index([toEmail])
+}
+
+// MODULO: OFERTAS
+model Offer {
+  id              String    @id @default(cuid())
+  ticketId        String
+  buyerId         String
+  sellerId        String
+  amount          Float
+  message         String?
+  status          String    @default("pending") // pending, accepted, rejected, paid, expired, cancelled
+  expiresAt       DateTime  // Expiracao da oferta
+  paymentDeadline DateTime? // Prazo para pagamento apos aceite
+  transactionId   String?   // Transacao criada apos pagamento
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  ticket          Ticket       @relation(fields: [ticketId], references: [id])
+  buyer           User         @relation("OfferBuyer", fields: [buyerId], references: [id])
+  seller          User         @relation("OfferSeller", fields: [sellerId], references: [id])
+  logs            OfferLog[]
+
+  @@index([ticketId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([paymentDeadline])
+}
+
+model OfferLog {
+  id        String   @id @default(cuid())
+  offerId   String
+  action    String   // created, accepted, rejected, payment_started, payment_completed, payment_timeout, expired, cancelled
+  details   String?
+  createdAt DateTime @default(now())
+
+  offer     Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@index([offerId])
+  @@index([createdAt])
+}
+
+// MODULO: LISTA DE ESPERA
+model WaitlistEntry {
+  id          String    @id @default(cuid())
+  eventName   String
+  eventDate   DateTime
+  ticketType  String?
+  userId      String
+  maxPrice    Float?
+  status      String    @default("waiting") // waiting, notified, accepted, purchased, expired, cancelled
+  position    Int
+  notifiedAt  DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([eventName])
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+// MODULO: DETECCAO DE FRAUDE
+model FraudAnalysis {
+  id             String   @id @default(cuid())
+  entityType     String   // user, transaction, ticket
+  entityId       String
+  riskScore      Int      // 0-100
+  riskLevel      String   // low, medium, high, critical
+  factors        String   // JSON
+  recommendation String   // approve, review, block
+  createdAt      DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([riskLevel])
+  @@index([createdAt])
+}
+
+model FraudAlert {
+  id            String    @id @default(cuid())
+  type          String    // multiple_accounts, suspicious_pattern, etc
+  severity      String    // low, medium, high, critical
+  userId        String?
+  transactionId String?
+  ticketId      String?
+  description   String
+  evidence      Json
+  status        String    @default("open") // open, investigating, resolved, dismissed
+  resolvedBy    String?
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([type])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model SuspiciousActivity {
+  id                String   @id @default(cuid())
+  userId            String
+  activityType      String
+  details           String
+  ipAddress         String?
+  deviceFingerprint String?
+  createdAt         DateTime @default(now())
+
+  user              User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([activityType])
+  @@index([createdAt])
+}
+
+// MODULO: ANALYTICS
+model TicketView {
+  id        String   @id @default(cuid())
+  ticketId  String
+  viewerId  String?  // null se anonimo
+  sessionId String
+  source    String   @default("direct") // direct, search, recommendation, share
+  duration  Int      @default(0) // segundos
+  createdAt DateTime @default(now())
+
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  viewer    User?    @relation("TicketViewer", fields: [viewerId], references: [id])
+
+  @@index([ticketId])
+  @@index([viewerId])
+  @@index([createdAt])
 }
