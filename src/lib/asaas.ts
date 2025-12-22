@@ -1,10 +1,32 @@
 // Integração com API Asaas para pagamentos PIX e Cartão de Crédito
+import fs from "fs";
+import path from "path";
 
 const ASAAS_API_URL = process.env.ASAAS_ENVIRONMENT === "production"
   ? "https://api.asaas.com/v3"
   : "https://sandbox.asaas.com/api/v3";
 
-const ASAAS_API_KEY = process.env.ASAAS_API_KEY || "";
+// Carrega a chave do arquivo ou variável de ambiente
+function getAsaasApiKey(): string {
+  // Primeiro tenta a variável de ambiente
+  if (process.env.ASAAS_API_KEY) {
+    return process.env.ASAAS_API_KEY;
+  }
+
+  // Se não encontrar, tenta ler do arquivo .asaas-key
+  try {
+    const keyPath = path.join(process.cwd(), ".asaas-key");
+    if (fs.existsSync(keyPath)) {
+      return fs.readFileSync(keyPath, "utf8").trim();
+    }
+  } catch {
+    // Ignora erros de leitura
+  }
+
+  return "";
+}
+
+const ASAAS_API_KEY = getAsaasApiKey();
 
 interface AsaasCustomer {
   id: string;
