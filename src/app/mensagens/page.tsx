@@ -15,12 +15,21 @@ interface Conversation {
   _count: { messages: number };
 }
 
+interface Attachment {
+  id: string;
+  type: string;
+  url: string;
+  filename: string;
+  size: number;
+}
+
 interface Message {
   id: string;
   content: string;
   createdAt: string;
   senderId: string;
   sender: { id: string; name: string };
+  attachments?: Attachment[];
 }
 
 export default function MensagensPage() {
@@ -33,7 +42,10 @@ export default function MensagensPage() {
   const [loading, setLoading] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [error, setError] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{ url: string; file: File } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -84,18 +96,95 @@ export default function MensagensPage() {
     await loadMessages(conv.id);
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Verifica se é uma imagem
+    if (!file.type.startsWith("image/")) {
+      setError("Apenas imagens são permitidas");
+      return;
+    }
+
+    // Verifica tamanho (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Imagem muito grande. Máximo: 10MB");
+      return;
+    }
+
+    // Cria preview
+    const url = URL.createObjectURL(file);
+    setPreviewImage({ url, file });
+    setError("");
+  };
+
+  const cancelImageUpload = () => {
+    if (previewImage) {
+      URL.revokeObjectURL(previewImage.url);
+      setPreviewImage(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const uploadImage = async (file: File): Promise<{ url: string; filename: string; type: string; size: number } | null> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao fazer upload");
+      }
+
+      return {
+        url: data.url,
+        filename: data.fileName,
+        type: data.fileType,
+        size: data.fileSize,
+      };
+    } catch (error) {
+      console.error("Erro no upload:", error);
+      return null;
+    }
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedConversation || sendingMessage) return;
+    if ((!newMessage.trim() && !previewImage) || !selectedConversation || sendingMessage) return;
 
     setSendingMessage(true);
+    setUploadingImage(!!previewImage);
     setError("");
 
     try {
+      let attachments: { url: string; filename: string; type: string; size: number }[] = [];
+
+      // Faz upload da imagem se houver
+      if (previewImage) {
+        const uploadResult = await uploadImage(previewImage.file);
+        if (uploadResult) {
+          attachments = [uploadResult];
+        } else {
+          setError("Erro ao enviar imagem");
+          return;
+        }
+      }
+
       const response = await fetch(`/api/modules/chat/${selectedConversation.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newMessage }),
+        body: JSON.stringify({
+          content: newMessage,
+          attachments: attachments.length > 0 ? attachments : undefined,
+        }),
       });
 
       const data = await response.json();
@@ -107,11 +196,13 @@ export default function MensagensPage() {
 
       setMessages((prev) => [...prev, data.message]);
       setNewMessage("");
+      cancelImageUpload();
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
       setError("Erro ao enviar mensagem");
     } finally {
       setSendingMessage(false);
+      setUploadingImage(false);
     }
   };
 
@@ -254,7 +345,30 @@ export default function MensagensPage() {
                                 : "bg-[#1A3A5C] text-white rounded-bl-md"
                             }`}
                           >
-                            <p className="break-words">{msg.content}</p>
+                            {/* Exibe imagens anexadas */}
+                            {msg.attachments && msg.attachments.length > 0 && (
+                              <div className="mb-2">
+                                {msg.attachments.map((att) => (
+                                  att.type.startsWith("image/") && (
+                                    <a
+                                      key={att.id}
+                                      href={att.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block"
+                                    >
+                                      <img
+                                        src={att.url}
+                                        alt={att.filename}
+                                        className="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                        style={{ maxHeight: "300px" }}
+                                      />
+                                    </a>
+                                  )
+                                ))}
+                              </div>
+                            )}
+                            {msg.content && <p className="break-words">{msg.content}</p>}
                             <p className={`text-xs mt-1 ${isOwn ? "text-white/70" : "text-gray-400"}`}>
                               {formatTime(msg.createdAt)}
                             </p>
@@ -273,9 +387,56 @@ export default function MensagensPage() {
                   </div>
                 )}
 
+                {/* Preview de imagem */}
+                {previewImage && (
+                  <div className="px-4 py-2 bg-[#1A3A5C]/50 border-t border-white/10">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <img
+                          src={previewImage.url}
+                          alt="Preview"
+                          className="h-16 w-16 object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={cancelImageUpload}
+                          className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600"
+                        >
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      <span className="text-sm text-gray-400">Imagem selecionada</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Input */}
                 <form onSubmit={sendMessage} className="p-4 border-t border-white/10">
                   <div className="flex gap-2">
+                    {/* Input hidden para arquivo */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+
+                    {/* Botão de anexar imagem */}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={sendingMessage || uploadingImage}
+                      className="px-3 py-3 bg-[#1A3A5C] hover:bg-[#2a4a6c] disabled:opacity-50 disabled:cursor-not-allowed text-gray-400 hover:text-white rounded-xl transition-colors border border-white/10"
+                      title="Enviar imagem"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+
                     <input
                       type="text"
                       value={newMessage}
@@ -285,11 +446,14 @@ export default function MensagensPage() {
                     />
                     <button
                       type="submit"
-                      disabled={!newMessage.trim() || sendingMessage}
+                      disabled={(!newMessage.trim() && !previewImage) || sendingMessage}
                       className="px-4 py-3 bg-[#16C784] hover:bg-[#14b576] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors"
                     >
                       {sendingMessage ? (
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          {uploadingImage && <span className="text-xs">Enviando...</span>}
+                        </div>
                       ) : (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

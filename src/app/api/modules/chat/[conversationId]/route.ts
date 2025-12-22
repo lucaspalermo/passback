@@ -81,6 +81,14 @@ function containsBlockedContent(text: string): boolean {
   return blockedPatterns.some((pattern) => pattern.test(text));
 }
 
+// Interface para anexos
+interface AttachmentData {
+  type: string;
+  url: string;
+  filename: string;
+  size: number;
+}
+
 // Envia mensagem
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const session = await getServerSession(authOptions);
@@ -91,14 +99,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   const { conversationId } = await params;
 
   try {
-    const { content } = await request.json();
+    const { content, attachments } = await request.json() as {
+      content?: string;
+      attachments?: AttachmentData[];
+    };
 
-    if (!content?.trim()) {
+    // Precisa ter conteúdo ou anexo
+    if (!content?.trim() && (!attachments || attachments.length === 0)) {
       return NextResponse.json({ error: "Mensagem vazia" }, { status: 400 });
     }
 
-    // Verifica conteúdo bloqueado
-    if (containsBlockedContent(content)) {
+    // Verifica conteúdo bloqueado (apenas se tiver texto)
+    if (content && containsBlockedContent(content)) {
       return NextResponse.json({
         error: "Mensagem bloqueada: não compartilhe dados pessoais, telefone ou informações de pagamento fora da plataforma.",
       }, { status: 400 });
@@ -119,22 +131,31 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Conversa não encontrada" }, { status: 404 });
     }
 
-    // Cria mensagem
+    // Cria mensagem com anexos
     const message = await prisma.chatMessage.create({
       data: {
         conversationId,
         senderId: session.user.id,
-        content: content.trim(),
+        content: content?.trim() || "",
+        attachments: attachments && attachments.length > 0 ? {
+          create: attachments.map((att) => ({
+            type: att.type,
+            url: att.url,
+            filename: att.filename,
+            size: att.size,
+          })),
+        } : undefined,
       },
       include: {
         sender: { select: { id: true, name: true } },
+        attachments: true,
       },
     });
 
     // Atualiza timestamp da conversa
     await prisma.chatConversation.update({
       where: { id: conversationId },
-      data: { updatedAt: new Date() },
+      data: { lastMessageAt: new Date(), updatedAt: new Date() },
     });
 
     return NextResponse.json({ message });
