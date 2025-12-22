@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
-import BuyButton from "./BuyButton";
+import ActionButtons from "./ActionButtons";
 import FavoriteWrapper from "./FavoriteWrapper";
 
 interface TicketPageProps {
@@ -297,7 +297,13 @@ export default async function TicketPage({ params }: TicketPageProps) {
                   </p>
                 </div>
               ) : (
-                <BuyButton ticketId={ticket.id} price={ticket.price} />
+                <ActionButtons
+                  ticketId={ticket.id}
+                  price={ticket.price}
+                  eventName={ticket.eventName}
+                  sellerId={ticket.sellerId}
+                  eventDate={ticket.eventDate}
+                />
               )}
 
               {/* Seguranca */}

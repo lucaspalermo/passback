@@ -207,8 +207,8 @@ export async function POST(request: NextRequest) {
     const platformFee = amount * PLATFORM_FEE_PERCENTAGE;
     const sellerAmount = amount - platformFee;
 
-    // Define expiração em 30 minutos (tempo para pagar PIX)
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    // Define expiração em 5 minutos (tempo para pagar)
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
     // Cria a transação
     const transaction = await prisma.transaction.create({
