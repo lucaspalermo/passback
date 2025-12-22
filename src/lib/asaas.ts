@@ -82,6 +82,7 @@ async function asaasRequest<T>(
     headers: {
       "Content-Type": "application/json",
       "access_token": ASAAS_API_KEY,
+      "User-Agent": "Passback/1.0",
       ...options.headers,
     },
   });
