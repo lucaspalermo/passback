@@ -41,7 +41,8 @@
       "Bash(npm install:*)",
       "Bash(npx shadcn@latest:*)",
       "Bash(sshpass -p '2262144Lucas@' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@145.223.94.64 \"echo ''Conexão estabelecida!'' && hostname && uname -a\")",
-      "Bash(where:*)"
+      "Bash(where:*)",
+      "Bash(sshpass -p '2262144Lucas@' ssh -o StrictHostKeyChecking=no root@145.223.94.64 'cat > /tmp/asaas_key.txt << ''''KEYEOF''''\n$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OjlhODQ2MmQ5LWE0ZDUtNDgwOS1hZWJkLWE1NzhhNmNhZDdlMTo6$aach_884e2f6c-278c-40be-a05c-eb1d9a4e0d34\nKEYEOF\ncat /tmp/asaas_key.txt')"
     ]
   }
 }

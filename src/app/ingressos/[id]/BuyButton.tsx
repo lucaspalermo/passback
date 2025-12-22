@@ -138,6 +138,7 @@ export default function BuyButton({ ticketId, price }: BuyButtonProps) {
           encodedImage={pixQrCode.encodedImage}
           payload={pixQrCode.payload}
           expirationDate={pixQrCode.expirationDate}
+          transactionId={transactionId || undefined}
           onExpired={handlePixExpired}
         />
 
