@@ -38,6 +38,18 @@ export default function PixQrCode({
 
         if (data.status === "paid" || data.status === "confirmed" || data.status === "released") {
           onPaymentConfirmed?.();
+
+          // Se tem telefone do vendedor, abre WhatsApp
+          if (data.sellerPhone) {
+            const phone = data.sellerPhone.replace(/\D/g, "");
+            const message = encodeURIComponent(
+              `Ola ${data.sellerName || ""}! Acabei de comprar o ingresso "${data.eventName || ""}" pelo Passback. Podemos combinar a entrega?`
+            );
+            // Abre WhatsApp em nova aba
+            window.open(`https://wa.me/55${phone}?text=${message}`, "_blank");
+          }
+
+          // Redireciona para a pagina de compra
           router.push(`/compra/${transactionId}?status=success`);
         }
       } catch (error) {
