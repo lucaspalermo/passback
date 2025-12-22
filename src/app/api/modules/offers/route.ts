@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 import { isOffersEnabled, OFFERS_CONFIG } from "@/modules/offers";
 import {
   createOffer,
@@ -12,6 +13,18 @@ import {
   getOfferCounts,
   processExpiredOffers,
 } from "@/modules/offers/services";
+import {
+  generateWhatsAppLink,
+  WHATSAPP_TEMPLATES,
+} from "@/modules/notifications/services/whatsapp.service";
+
+// Formata valor para moeda BRL
+function formatCurrency(value: number): string {
+  return value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
 
 // GET /api/modules/offers - Lista ofertas do usuário
 export async function GET(request: NextRequest) {
@@ -96,6 +109,36 @@ export async function POST(request: NextRequest) {
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+
+    // Busca dados para notificação
+    if (result.offer) {
+      const ticket = await prisma.ticket.findUnique({
+        where: { id: ticketId },
+        include: {
+          seller: { select: { name: true, phone: true } },
+        },
+      });
+
+      const buyer = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { name: true },
+      });
+
+      // Gera notificação para o vendedor
+      if (ticket?.seller?.phone && buyer) {
+        const notificationMessage = WHATSAPP_TEMPLATES.newOffer(
+          buyer.name,
+          ticket.eventName,
+          formatCurrency(amount),
+          formatCurrency(ticket.price)
+        );
+        const whatsappLink = generateWhatsAppLink(
+          ticket.seller.phone,
+          notificationMessage
+        );
+        console.log(`[Notificação Oferta] Vendedor ${ticket.seller.name}: ${whatsappLink}`);
+      }
     }
 
     return NextResponse.json({

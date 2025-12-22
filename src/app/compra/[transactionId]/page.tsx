@@ -6,7 +6,7 @@ import { authOptions } from "@/lib/auth";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ConfirmButton from "./ConfirmButton";
 import DisputeButton from "./DisputeButton";
-import WhatsAppRedirect from "./WhatsAppRedirect";
+import ContactOptions from "./ContactOptions";
 import Navbar from "@/components/Navbar";
 import PurchaseActions from "@/components/PurchaseActions";
 
@@ -89,9 +89,10 @@ export default async function CompraPage({ params, searchParams }: CompraPagePro
   const isPaid = ["paid", "confirmed", "released"].includes(transaction.status);
   const canConfirm = isBuyer && transaction.status === "paid";
 
-  const shouldRedirectToWhatsApp =
+  // Mostrar opções de contato quando pagamento confirmado
+  const showContactOptions =
     isBuyer &&
-    queryParams.status === "success" &&
+    (queryParams.status === "success" || transaction.status === "paid") &&
     transaction.seller.phone;
 
   return (
@@ -99,21 +100,16 @@ export default async function CompraPage({ params, searchParams }: CompraPagePro
       <Navbar />
       <div className="pt-20 pb-8">
         <div className="max-w-3xl mx-auto px-4">
-          {shouldRedirectToWhatsApp && (
-            <WhatsAppRedirect
-              phone={transaction.seller.phone!}
-              message={`Ola! Comprei o ingresso "${transaction.ticket.eventName}" pelo Passback. Podemos combinar a entrega?`}
-              shouldRedirect={true}
-            />
-          )}
-
-          {/* Success/Error Messages */}
-          {queryParams.status === "success" && (
-            <div className="bg-[#16C784]/10 border border-[#16C784]/20 text-[#16C784] p-4 rounded-xl mb-6 flex items-center gap-3">
-              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Pagamento realizado com sucesso! Abrindo WhatsApp do vendedor...
+          {/* Opcoes de Contato apos pagamento */}
+          {showContactOptions && queryParams.status === "success" && (
+            <div className="mb-6">
+              <ContactOptions
+                sellerName={transaction.seller.name}
+                sellerPhone={transaction.seller.phone!}
+                ticketId={transaction.ticketId}
+                eventName={transaction.ticket.eventName}
+                transactionId={transaction.id}
+              />
             </div>
           )}
 
@@ -283,24 +279,43 @@ export default async function CompraPage({ params, searchParams }: CompraPagePro
               )}
 
               {transaction.status === "paid" && (
-                <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl">
-                  <h4 className="font-medium text-blue-400 mb-2 flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Pagamento confirmado
-                  </h4>
-                  {isBuyer ? (
-                    <div className="text-sm text-blue-300/80 space-y-1">
-                      <p>Entre em contato com o vendedor pelo WhatsApp para combinar a entrega do ingresso.</p>
-                      <p>Apos entrar no evento, confirme aqui para liberar o pagamento ao vendedor.</p>
-                    </div>
+                <>
+                  {isBuyer && transaction.seller.phone ? (
+                    <ContactOptions
+                      sellerName={transaction.seller.name}
+                      sellerPhone={transaction.seller.phone}
+                      ticketId={transaction.ticketId}
+                      eventName={transaction.ticket.eventName}
+                      transactionId={transaction.id}
+                    />
                   ) : (
-                    <p className="text-sm text-blue-300/80">
-                      Entre em contato com o comprador para enviar o ingresso. O pagamento sera liberado apos confirmacao.
-                    </p>
+                    <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl">
+                      <h4 className="font-medium text-blue-400 mb-2 flex items-center gap-2">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Pagamento confirmado
+                      </h4>
+                      <p className="text-sm text-blue-300/80">
+                        Entre em contato com o comprador para enviar o ingresso. O pagamento sera liberado apos confirmacao.
+                      </p>
+                    </div>
                   )}
-                </div>
+
+                  {isBuyer && (
+                    <div className="bg-[#FF8A00]/10 border border-[#FF8A00]/20 p-3 rounded-xl mt-4">
+                      <p className="text-sm text-[#FF8A00] flex items-start gap-2">
+                        <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>
+                          Apos entrar no evento, <strong>confirme aqui</strong> para liberar o pagamento ao vendedor.
+                          Se nao confirmar em <strong>24 horas apos o evento</strong>, o pagamento sera liberado automaticamente.
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
 
               {transaction.status === "disputed" && (

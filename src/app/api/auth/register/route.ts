@@ -3,11 +3,37 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 
+// Validação de CPF
+function validateCPF(cpf: string): boolean {
+  const numbers = cpf.replace(/\D/g, "");
+  if (numbers.length !== 11) return false;
+  if (/^(\d)\1+$/.test(numbers)) return false;
+
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(numbers[i]) * (10 - i);
+  }
+  let digit = (sum * 10) % 11;
+  if (digit === 10) digit = 0;
+  if (digit !== parseInt(numbers[9])) return false;
+
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(numbers[i]) * (11 - i);
+  }
+  digit = (sum * 10) % 11;
+  if (digit === 10) digit = 0;
+  if (digit !== parseInt(numbers[10])) return false;
+
+  return true;
+}
+
 const registerSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  email: z.string().email("Email inválido"),
+  email: z.string().email("Email invalido"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  phone: z.string().optional(),
+  cpf: z.string().min(11, "CPF e obrigatorio").refine(validateCPF, "CPF invalido"),
+  phone: z.string().min(10, "WhatsApp e obrigatorio").max(11, "WhatsApp invalido"),
 });
 
 export async function POST(request: NextRequest) {
@@ -22,15 +48,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, email, password, phone } = validation.data;
+    const { name, email, password, cpf, phone } = validation.data;
 
-    const existingUser = await prisma.user.findUnique({
+    // Verifica email duplicado
+    const existingEmail = await prisma.user.findUnique({
       where: { email },
     });
 
-    if (existingUser) {
+    if (existingEmail) {
       return NextResponse.json(
-        { error: "Este email já está cadastrado" },
+        { error: "Este email ja esta cadastrado" },
+        { status: 400 }
+      );
+    }
+
+    // Verifica CPF duplicado
+    const existingCPF = await prisma.user.findFirst({
+      where: { cpf },
+    });
+
+    if (existingCPF) {
+      return NextResponse.json(
+        { error: "Este CPF ja esta cadastrado" },
         { status: 400 }
       );
     }
@@ -42,7 +81,10 @@ export async function POST(request: NextRequest) {
         name,
         email,
         password: hashedPassword,
+        cpf,
         phone,
+        // PIX será o CPF por padrão
+        pixKey: cpf,
       },
     });
 

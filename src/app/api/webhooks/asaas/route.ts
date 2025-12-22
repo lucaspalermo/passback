@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import {
+  generateWhatsAppLink,
+  WHATSAPP_TEMPLATES,
+} from "@/modules/notifications/services/whatsapp.service";
+
+// Formata valor para moeda BRL
+function formatCurrency(value: number): string {
+  return value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
 
 // Eventos de pagamento do Asaas
 type AsaasEvent =
@@ -60,7 +72,11 @@ export async function POST(request: NextRequest) {
     // Busca a transação pelo ID (external reference)
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
-      include: { ticket: true },
+      include: {
+        ticket: true,
+        buyer: { select: { id: true, name: true, phone: true, email: true } },
+        seller: { select: { id: true, name: true, phone: true, email: true } },
+      },
     });
 
     if (!transaction) {
@@ -91,6 +107,23 @@ export async function POST(request: NextRequest) {
           ]);
 
           console.log(`Pagamento aprovado para transação ${transactionId}`);
+
+          // Gera link de notificação para o vendedor
+          if (transaction.seller.phone) {
+            const notificationMessage = WHATSAPP_TEMPLATES.newPurchase(
+              transaction.buyer.name,
+              transaction.ticket.eventName,
+              formatCurrency(transaction.amount)
+            );
+            const whatsappLink = generateWhatsAppLink(
+              transaction.seller.phone,
+              notificationMessage
+            );
+            console.log(`[Notificação Vendedor] ${transaction.seller.name}: ${whatsappLink}`);
+
+            // TODO: Integrar com API WhatsApp Business para envio automatico
+            // Por enquanto, a notificação é enviada via email (se configurado)
+          }
         }
         break;
       }
