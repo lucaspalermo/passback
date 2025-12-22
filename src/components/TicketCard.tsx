@@ -1,5 +1,6 @@
 import Link from "next/link";
 import FavoriteButton from "./FavoriteButton";
+import TicketCardButtons from "./TicketCardButtons";
 
 interface TicketCardProps {
   id: string;
@@ -143,20 +144,24 @@ export default function TicketCard({
           </div>
 
           {/* Preco */}
-          <div className="flex items-center justify-between pt-3 border-t border-white/5">
-            <div>
-              {originalPrice && originalPrice > price && (
-                <span className="text-gray-500 line-through text-sm block">
-                  {formatPrice(originalPrice)}
+          <div className="pt-3 border-t border-white/5">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                {originalPrice && originalPrice > price && (
+                  <span className="text-gray-500 line-through text-sm block">
+                    {formatPrice(originalPrice)}
+                  </span>
+                )}
+                <span className="text-xl font-bold text-white">
+                  {formatPrice(price)}
                 </span>
-              )}
-              <span className="text-xl font-bold text-white">
-                {formatPrice(price)}
-              </span>
+              </div>
             </div>
-            <div className="bg-[#16C784]/10 text-[#16C784] px-4 py-2 rounded-lg font-semibold text-sm group-hover:bg-[#16C784] group-hover:text-white transition-all">
-              Comprar
-            </div>
+            <TicketCardButtons
+              ticketId={id}
+              price={price}
+              eventName={eventName}
+            />
           </div>
         </div>
       </div>
