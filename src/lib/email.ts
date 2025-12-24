@@ -658,7 +658,38 @@ export async function sendOfferAcceptedEmail(
   });
 }
 
-// 12. Oferta recusada (comprador)
+// 12. Codigo de verificacao de email
+export async function sendEmailVerificationCode(
+  to: string,
+  userName: string,
+  code: string
+) {
+  const html = baseTemplate(`
+    <h2 style="margin: 0 0 20px; font-size: 24px; color: #FFFFFF; text-align: center;">
+      Verificacao de Email
+    </h2>
+    <p style="margin: 0 0 15px; font-size: 16px; color: #B8C5D3; line-height: 1.6; text-align: center;">
+      Ola ${userName}, use o codigo abaixo para verificar seu email:
+    </p>
+    <div style="background-color: #1A3A5C; border-radius: 12px; padding: 30px; margin: 20px 0; text-align: center;">
+      <p style="margin: 0; font-size: 36px; font-weight: bold; color: #16C784; letter-spacing: 8px; font-family: monospace;">
+        ${code}
+      </p>
+    </div>
+    <p style="margin: 0 0 15px; font-size: 14px; color: #8B9DB5; line-height: 1.6; text-align: center;">
+      Este codigo expira em 10 minutos.<br>
+      Se voce nao solicitou esta verificacao, ignore este email.
+    </p>
+  `);
+
+  return sendEmail({
+    to,
+    subject: `Codigo de verificacao: ${code}`,
+    html,
+  });
+}
+
+// 13. Oferta recusada (comprador)
 export async function sendOfferRejectedEmail(
   to: string,
   buyerName: string,
