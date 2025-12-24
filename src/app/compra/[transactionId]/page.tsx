@@ -7,6 +7,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import ConfirmButton from "./ConfirmButton";
 import DisputeButton from "./DisputeButton";
 import ContactOptions from "./ContactOptions";
+import ReviewSection from "./ReviewSection";
 import Navbar from "@/components/Navbar";
 import PurchaseActions from "@/components/PurchaseActions";
 
@@ -333,19 +334,28 @@ export default async function CompraPage({ params, searchParams }: CompraPagePro
               )}
 
               {transaction.status === "released" && (
-                <div className="bg-[#16C784]/10 border border-[#16C784]/20 p-4 rounded-xl">
-                  <h4 className="font-medium text-[#16C784] mb-2 flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Transacao finalizada
-                  </h4>
-                  <p className="text-sm text-[#16C784]/80">
-                    {isBuyer
-                      ? "Voce confirmou a entrada no evento. O pagamento foi liberado ao vendedor."
-                      : "O comprador confirmou. O pagamento foi liberado para voce!"}
-                  </p>
-                </div>
+                <>
+                  <div className="bg-[#16C784]/10 border border-[#16C784]/20 p-4 rounded-xl">
+                    <h4 className="font-medium text-[#16C784] mb-2 flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Transacao finalizada
+                    </h4>
+                    <p className="text-sm text-[#16C784]/80">
+                      {isBuyer
+                        ? "Voce confirmou a entrada no evento. O pagamento foi liberado ao vendedor."
+                        : "O comprador confirmou. O pagamento foi liberado para voce!"}
+                    </p>
+                  </div>
+
+                  {/* Secao de Avaliacao */}
+                  <ReviewSection
+                    transactionId={transaction.id}
+                    userToReview={isBuyer ? transaction.seller : transaction.buyer}
+                    eventName={transaction.ticket.eventName}
+                  />
+                </>
               )}
 
               {/* Action Buttons */}

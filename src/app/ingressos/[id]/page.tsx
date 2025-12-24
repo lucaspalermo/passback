@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import ActionButtons from "./ActionButtons";
 import FavoriteWrapper from "./FavoriteWrapper";
+import { SellerRatingBadge, SellerRatingFull } from "@/components/SellerRating";
 
 interface TicketPageProps {
   params: Promise<{ id: string }>;
@@ -216,18 +217,24 @@ export default async function TicketPage({ params }: TicketPageProps) {
                   </span>
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-semibold text-white">{ticket.seller.name}</p>
                     {ticket.seller.verified && (
                       <span className="bg-[#16C784]/20 text-[#16C784] px-2 py-0.5 rounded text-xs font-medium">
                         Verificado
                       </span>
                     )}
+                    <SellerRatingBadge sellerId={ticket.seller.id} />
                   </div>
                   <p className="text-gray-400 text-sm">
                     Membro desde {new Date(ticket.seller.createdAt).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
                   </p>
                 </div>
+              </div>
+
+              {/* Avaliacoes do vendedor */}
+              <div className="mt-4 pt-4 border-t border-white/5">
+                <SellerRatingFull sellerId={ticket.seller.id} />
               </div>
             </div>
           </div>
