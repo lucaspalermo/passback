@@ -61,6 +61,19 @@ export async function POST(request: NextRequest) {
         (existingTransaction.status === "pending" && existingTransaction.expiresAt && new Date(existingTransaction.expiresAt) < now);
 
       if (isExpired) {
+        // Deleta disputas e mensagens relacionadas antes de deletar a transação
+        const dispute = await prisma.dispute.findUnique({
+          where: { transactionId: existingTransaction.id },
+        });
+        if (dispute) {
+          await prisma.disputeMessage.deleteMany({
+            where: { disputeId: dispute.id },
+          });
+          await prisma.dispute.delete({
+            where: { id: dispute.id },
+          });
+        }
+
         // Deleta a transação expirada para permitir nova compra
         await prisma.transaction.delete({
           where: { id: existingTransaction.id },
@@ -145,6 +158,19 @@ export async function POST(request: NextRequest) {
         );
       } else if (existingTransaction.status === "cancelled" || existingTransaction.status === "refunded") {
         // Transação cancelada ou reembolsada - pode deletar e criar nova
+        // Deleta disputas e mensagens relacionadas antes de deletar a transação
+        const dispute = await prisma.dispute.findUnique({
+          where: { transactionId: existingTransaction.id },
+        });
+        if (dispute) {
+          await prisma.disputeMessage.deleteMany({
+            where: { disputeId: dispute.id },
+          });
+          await prisma.dispute.delete({
+            where: { id: dispute.id },
+          });
+        }
+
         await prisma.transaction.delete({
           where: { id: existingTransaction.id },
         });
