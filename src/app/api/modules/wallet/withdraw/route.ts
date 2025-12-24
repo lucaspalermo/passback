@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { sendWithdrawalRequestedEmail } from "@/lib/email";
 
 // POST - Solicitar saque
 export async function POST(request: NextRequest) {
@@ -27,9 +28,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Valor minimo para saque: R$ 5,00" }, { status: 400 });
     }
 
-    // Busca carteira do usuario
+    // Busca carteira e dados do usuario
     const wallet = await prisma.wallet.findUnique({
       where: { userId: session.user.id },
+      include: { user: { select: { name: true, email: true } } },
     });
 
     if (!wallet) {
@@ -91,6 +93,14 @@ export async function POST(request: NextRequest) {
         },
       }),
     ]);
+
+    // Envia email de confirmação do saque
+    sendWithdrawalRequestedEmail(
+      wallet.user.email,
+      wallet.user.name,
+      amount,
+      pixKey
+    ).catch((err) => console.error("[Email] Erro saque solicitado:", err));
 
     return NextResponse.json({
       message: "Saque solicitado com sucesso",

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { sendWithdrawalCompletedEmail } from "@/lib/email";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -80,7 +81,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const withdrawal = await prisma.withdrawal.findUnique({
       where: { id },
-      include: { wallet: true },
+      include: {
+        wallet: {
+          include: { user: { select: { name: true, email: true } } },
+        },
+      },
     });
 
     if (!withdrawal) {
@@ -133,6 +138,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           },
         }),
       ]);
+
+      // Envia email notificando o usuário que o saque foi concluído
+      sendWithdrawalCompletedEmail(
+        withdrawal.wallet.user.email,
+        withdrawal.wallet.user.name,
+        withdrawal.amount,
+        withdrawal.pixKey
+      ).catch((err) => console.error("[Email] Erro saque concluido:", err));
 
       return NextResponse.json({
         message: "Saque concluido com sucesso",

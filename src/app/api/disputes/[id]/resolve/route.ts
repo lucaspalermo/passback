@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { sendDisputeResolvedEmail } from "@/lib/email";
 
 export async function POST(
   request: NextRequest,
@@ -50,8 +51,9 @@ export async function POST(
       include: {
         transaction: {
           include: {
-            buyer: { include: { reputation: true } },
-            seller: { include: { reputation: true } },
+            ticket: true,
+            buyer: { select: { id: true, name: true, email: true }, include: { reputation: true } },
+            seller: { select: { id: true, name: true, email: true }, include: { reputation: true } },
           },
         },
       },
@@ -189,6 +191,31 @@ export async function POST(
         disputeId,
       },
     });
+
+    // Envia emails para ambas as partes
+    const buyerWon = decision === "buyer";
+
+    // Email para o comprador
+    sendDisputeResolvedEmail(
+      transaction.buyer.email,
+      transaction.buyer.name,
+      transaction.ticket.eventName,
+      decision as "buyer" | "seller",
+      buyerWon,
+      transaction.amount,
+      disputeId
+    ).catch((err) => console.error("[Email] Erro disputa comprador:", err));
+
+    // Email para o vendedor
+    sendDisputeResolvedEmail(
+      transaction.seller.email,
+      transaction.seller.name,
+      transaction.ticket.eventName,
+      decision as "buyer" | "seller",
+      !buyerWon,
+      transaction.sellerAmount,
+      disputeId
+    ).catch((err) => console.error("[Email] Erro disputa vendedor:", err));
 
     return NextResponse.json({
       message: `Disputa resolvida a favor do ${decision === "buyer" ? "comprador" : "vendedor"}`,

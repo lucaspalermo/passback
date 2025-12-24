@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { releaseToAvailableBalance } from "@/lib/wallet";
+import { sendPaymentReleasedEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +25,10 @@ export async function POST(request: NextRequest) {
 
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
-      include: { ticket: true },
+      include: {
+        ticket: true,
+        seller: { select: { name: true, email: true } },
+      },
     });
 
     if (!transaction) {
@@ -75,6 +79,15 @@ export async function POST(request: NextRequest) {
       transaction.ticket?.eventName || "Ingresso",
       "confirmed"
     );
+
+    // Envia email para o vendedor notificando que o pagamento foi liberado
+    sendPaymentReleasedEmail(
+      transaction.seller.email,
+      transaction.seller.name,
+      transaction.ticket.eventName,
+      transaction.sellerAmount,
+      transactionId
+    ).catch((err) => console.error("[Email] Erro ao enviar liberação:", err));
 
     return NextResponse.json({
       message: "Confirmacao realizada com sucesso! O pagamento foi liberado ao vendedor.",

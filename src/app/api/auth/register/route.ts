@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
+import { sendWelcomeEmail } from "@/lib/email";
 
 // Validação de CPF
 function validateCPF(cpf: string): boolean {
@@ -86,6 +87,11 @@ export async function POST(request: NextRequest) {
         // PIX será o CPF por padrão
         pixKey: cpf,
       },
+    });
+
+    // Envia email de boas-vindas (não bloqueia a resposta)
+    sendWelcomeEmail(email, name).catch((err) => {
+      console.error("[Email] Erro ao enviar boas-vindas:", err);
     });
 
     return NextResponse.json(

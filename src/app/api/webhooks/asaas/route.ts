@@ -4,6 +4,10 @@ import {
   generateWhatsAppLink,
   WHATSAPP_TEMPLATES,
 } from "@/modules/notifications/services/whatsapp.service";
+import {
+  sendPaymentConfirmedBuyerEmail,
+  sendNewSaleEmail,
+} from "@/lib/email";
 
 // Formata valor para moeda BRL
 function formatCurrency(value: number): string {
@@ -108,7 +112,43 @@ export async function POST(request: NextRequest) {
 
           console.log(`Pagamento aprovado para transação ${transactionId}`);
 
-          // Gera link de notificação para o vendedor
+          // Formata data do evento
+          const eventDate = new Date(transaction.ticket.eventDate).toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+
+          // Envia email para o comprador
+          sendPaymentConfirmedBuyerEmail(
+            transaction.buyer.email,
+            transaction.buyer.name,
+            transaction.ticket.eventName,
+            transaction.ticket.ticketType,
+            eventDate,
+            transaction.ticket.eventLocation,
+            transaction.amount,
+            transaction.seller.name,
+            transaction.seller.phone,
+            transactionId
+          ).catch((err) => console.error("[Email] Erro comprador:", err));
+
+          // Envia email para o vendedor
+          sendNewSaleEmail(
+            transaction.seller.email,
+            transaction.seller.name,
+            transaction.ticket.eventName,
+            transaction.ticket.ticketType,
+            transaction.amount,
+            transaction.sellerAmount,
+            transaction.buyer.name,
+            transaction.buyer.phone,
+            transactionId
+          ).catch((err) => console.error("[Email] Erro vendedor:", err));
+
+          // Gera link de notificação para o vendedor (WhatsApp)
           if (transaction.seller.phone) {
             const notificationMessage = WHATSAPP_TEMPLATES.newPurchase(
               transaction.buyer.name,
@@ -120,9 +160,6 @@ export async function POST(request: NextRequest) {
               notificationMessage
             );
             console.log(`[Notificação Vendedor] ${transaction.seller.name}: ${whatsappLink}`);
-
-            // TODO: Integrar com API WhatsApp Business para envio automatico
-            // Por enquanto, a notificação é enviada via email (se configurado)
           }
         }
         break;

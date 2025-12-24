@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
+import { sendDisputeOpenedEmail } from "@/lib/email";
 
 const disputeSchema = z.object({
   transactionId: z.string().min(1, "ID da transacao e obrigatorio"),
@@ -40,8 +41,9 @@ export async function POST(request: NextRequest) {
       where: { id: transactionId },
       include: {
         dispute: true,
-        buyer: { include: { reputation: true } },
-        seller: { include: { reputation: true } },
+        ticket: true,
+        buyer: { select: { id: true, name: true, email: true }, include: { reputation: true } },
+        seller: { select: { id: true, name: true, email: true }, include: { reputation: true } },
       },
     });
 
@@ -103,6 +105,38 @@ export async function POST(request: NextRequest) {
       where: { id: transactionId },
       data: { status: "disputed" },
     });
+
+    // Mapeamento de motivos para exibição
+    const reasonLabels: Record<string, string> = {
+      ingresso_invalido: "Ingresso invalido",
+      nao_recebeu: "Nao recebeu o ingresso",
+      ingresso_diferente: "Ingresso diferente do anunciado",
+      vendedor_nao_responde: "Vendedor nao responde",
+      outro: "Outro motivo",
+    };
+
+    // Envia email para quem abriu a disputa
+    const opener = isBuyer ? transaction.buyer : transaction.seller;
+    const otherParty = isBuyer ? transaction.seller : transaction.buyer;
+
+    sendDisputeOpenedEmail(
+      opener.email,
+      opener.name,
+      transaction.ticket.eventName,
+      reasonLabels[reason] || reason,
+      dispute.id,
+      true
+    ).catch((err) => console.error("[Email] Erro disputa opener:", err));
+
+    // Envia email para a outra parte
+    sendDisputeOpenedEmail(
+      otherParty.email,
+      otherParty.name,
+      transaction.ticket.eventName,
+      reasonLabels[reason] || reason,
+      dispute.id,
+      false
+    ).catch((err) => console.error("[Email] Erro disputa other:", err));
 
     return NextResponse.json(
       {
