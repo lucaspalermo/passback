@@ -5,6 +5,14 @@ import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import Navbar from "@/components/Navbar";
 import PurchaseActions from "@/components/PurchaseActions";
+import {
+  AnimatedPage,
+  AnimatedHeader,
+  AnimatedStatCard,
+  AnimatedList,
+  AnimatedListItem,
+  AnimatedEmptyState,
+} from "@/components/ui/PageAnimations";
 
 const statusConfig: Record<string, { label: string; bgColor: string; textColor: string; icon: string }> = {
   pending: { label: "Aguardando pagamento", bgColor: "bg-[#FF8A00]/10", textColor: "text-[#FF8A00]", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
@@ -57,30 +65,30 @@ export default async function MinhasComprasPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B1F33]">
+    <AnimatedPage className="min-h-screen bg-[#0B1F33]">
       <Navbar />
       <div className="pt-20 pb-8">
         <div className="max-w-5xl mx-auto px-4">
           {/* Header */}
-          <div className="mb-8">
+          <AnimatedHeader className="mb-8">
             <h1 className="text-2xl md:text-3xl font-bold text-white">Minhas Compras</h1>
             <p className="text-gray-400 mt-1">Acompanhe seus ingressos comprados</p>
-          </div>
+          </AnimatedHeader>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mb-8">
-            <div className="bg-[#0F2A44] rounded-xl p-4 border border-white/5">
+            <AnimatedStatCard delay={0.1}>
               <p className="text-gray-400 text-sm">Total</p>
               <p className="text-2xl font-bold text-white">{stats.total}</p>
-            </div>
-            <div className="bg-[#0F2A44] rounded-xl p-4 border border-white/5">
+            </AnimatedStatCard>
+            <AnimatedStatCard delay={0.2}>
               <p className="text-gray-400 text-sm">Em andamento</p>
               <p className="text-2xl font-bold text-blue-400">{stats.active}</p>
-            </div>
-            <div className="bg-[#0F2A44] rounded-xl p-4 border border-white/5">
+            </AnimatedStatCard>
+            <AnimatedStatCard delay={0.3}>
               <p className="text-gray-400 text-sm">Finalizadas</p>
               <p className="text-2xl font-bold text-[#16C784]">{stats.completed}</p>
-            </div>
+            </AnimatedStatCard>
           </div>
 
           {purchases.length === 0 ? (
@@ -178,6 +186,6 @@ export default async function MinhasComprasPage() {
           )}
         </div>
       </div>
-    </div>
+    </AnimatedPage>
   );
 }

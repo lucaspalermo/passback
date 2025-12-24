@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import PixQrCode from "@/components/PixQrCode";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ActionButtonsProps {
   ticketId: string;
@@ -439,52 +440,92 @@ export default function ActionButtons({ ticketId, price, eventName, sellerId, ev
 
   // Botões iniciais - Comprar + Fazer Oferta
   return (
-    <div className="space-y-3">
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-sm flex items-center gap-2">
-          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {error}
-        </div>
-      )}
+    <motion.div
+      className="space-y-3"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-sm flex items-center gap-2 overflow-hidden"
+          >
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Botão principal - Comprar */}
-      <button
+      <motion.button
         onClick={() => setShowPaymentOptions(true)}
         disabled={loading}
         className="w-full btn-gradient py-4 rounded-xl font-semibold text-white text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        whileHover={{ scale: 1.02, boxShadow: "0 10px 30px rgba(22, 199, 132, 0.3)" }}
+        whileTap={{ scale: 0.98 }}
+        transition={{ type: "spring", stiffness: 400, damping: 17 }}
       >
         {loading ? (
           <span className="flex items-center justify-center gap-2">
-            <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+            <motion.svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            >
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
+            </motion.svg>
             Processando...
           </span>
         ) : (
           `Comprar por ${formatPrice(price)}`
         )}
-      </button>
+      </motion.button>
 
       {/* Botão secundário - Fazer Oferta */}
-      <button
+      <motion.button
         onClick={() => setShowOfferModal(true)}
         className="w-full py-3 rounded-xl font-semibold text-[#FF8A00] border-2 border-[#FF8A00] hover:bg-[#FF8A00]/10 transition-all flex items-center justify-center gap-2"
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        transition={{ type: "spring", stiffness: 400, damping: 17 }}
       >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <motion.svg
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          whileHover={{ rotate: 10 }}
+        >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-        </svg>
+        </motion.svg>
         Fazer uma Oferta
-      </button>
+      </motion.button>
 
-      <p className="text-xs text-gray-500 text-center">
+      <motion.p
+        className="text-xs text-gray-500 text-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
         Pagamento seguro via PIX ou Cartao de Credito
-      </p>
+      </motion.p>
 
       {/* Informativo sobre prazos */}
-      <div className="bg-[#1A3A5C]/50 p-3 rounded-xl mt-4">
+      <motion.div
+        className="bg-[#1A3A5C]/50 p-3 rounded-xl mt-4"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
         <p className="text-xs text-gray-400 flex items-start gap-2">
           <svg className="w-4 h-4 mt-0.5 flex-shrink-0 text-[#16C784]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -493,7 +534,7 @@ export default function ActionButtons({ ticketId, price, eventName, sellerId, ev
             Apos o evento, voce tem <strong className="text-white">24 horas</strong> para confirmar a entrada ou abrir uma disputa. Caso contrario, o pagamento sera liberado automaticamente para o vendedor.
           </span>
         </p>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

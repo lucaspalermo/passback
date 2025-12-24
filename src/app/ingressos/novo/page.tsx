@@ -5,6 +5,20 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+import { motion, AnimatePresence } from "framer-motion";
+
+const formItemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 as const, delayChildren: 0.1 as const }
+  }
+};
 
 export default function NovoIngressoPage() {
   const router = useRouter();
@@ -197,36 +211,80 @@ export default function NovoIngressoPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0B1F33]">
+    <motion.div
+      className="min-h-screen bg-[#0B1F33]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
       <Navbar />
       <div className="pt-20 pb-8">
         <div className="max-w-2xl mx-auto px-4">
           {/* Header */}
-          <div className="mb-8">
-            <Link
-              href="/meus-ingressos"
-              className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
+          <motion.div
+            className="mb-8"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <motion.div whileHover={{ x: -3 }}>
+              <Link
+                href="/meus-ingressos"
+                className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Voltar
+              </Link>
+            </motion.div>
+            <motion.h1
+              className="text-2xl md:text-3xl font-bold text-white"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Voltar
-            </Link>
-            <h1 className="text-2xl md:text-3xl font-bold text-white">Vender Ingresso</h1>
-            <p className="text-gray-400 mt-1">Preencha as informacoes do ingresso que deseja vender</p>
-          </div>
+              Vender Ingresso
+            </motion.h1>
+            <motion.p
+              className="text-gray-400 mt-1"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              Preencha as informacoes do ingresso que deseja vender
+            </motion.p>
+          </motion.div>
 
           {/* Form Card */}
-          <div className="bg-[#0F2A44] rounded-2xl border border-white/5 overflow-hidden">
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-sm flex items-center gap-2">
-                  <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {error}
-                </div>
-              )}
+          <motion.div
+            className="bg-[#0F2A44] rounded-2xl border border-white/5 overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <motion.form
+              onSubmit={handleSubmit}
+              className="p-6 space-y-6"
+              variants={staggerContainer}
+              initial="hidden"
+              animate="visible"
+            >
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-sm flex items-center gap-2 overflow-hidden"
+                  >
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {error}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <div className="space-y-2">
                 <label htmlFor="eventName" className="block text-sm font-medium text-gray-300">
@@ -427,71 +485,99 @@ export default function NovoIngressoPage() {
               </div>
 
               {/* How it works */}
-              <div className="bg-[#2DFF88]/10 border border-[#2DFF88]/20 p-5 rounded-xl">
+              <motion.div
+                className="bg-[#2DFF88]/10 border border-[#2DFF88]/20 p-5 rounded-xl"
+                variants={formItemVariants}
+                whileHover={{ scale: 1.01 }}
+              >
                 <h4 className="font-medium text-[#2DFF88] mb-3 flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <motion.svg
+                    className="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    animate={{ rotate: [0, 10, -10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  </motion.svg>
                   Como funciona
                 </h4>
                 <ul className="text-sm text-gray-300 space-y-2">
-                  <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 rounded-full bg-[#2DFF88]/20 text-[#2DFF88] text-xs flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
-                    Voce anuncia o ingresso
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 rounded-full bg-[#2DFF88]/20 text-[#2DFF88] text-xs flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
-                    Um comprador paga pela plataforma
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 rounded-full bg-[#2DFF88]/20 text-[#2DFF88] text-xs flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
-                    O dinheiro fica retido (escrow)
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 rounded-full bg-[#2DFF88]/20 text-[#2DFF88] text-xs flex items-center justify-center flex-shrink-0 mt-0.5">4</span>
-                    Voce envia o ingresso via WhatsApp
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 rounded-full bg-[#2DFF88]/20 text-[#2DFF88] text-xs flex items-center justify-center flex-shrink-0 mt-0.5">5</span>
-                    O comprador confirma que entrou no evento
-                  </li>
-                  <li className="flex items-start gap-2">
+                  {[
+                    { num: "1", text: "Voce anuncia o ingresso" },
+                    { num: "2", text: "Um comprador paga pela plataforma" },
+                    { num: "3", text: "O dinheiro fica retido (escrow)" },
+                    { num: "4", text: "Voce envia o ingresso via WhatsApp" },
+                    { num: "5", text: "O comprador confirma que entrou no evento" },
+                  ].map((item, i) => (
+                    <motion.li
+                      key={item.num}
+                      className="flex items-start gap-2"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 * i }}
+                    >
+                      <span className="w-5 h-5 rounded-full bg-[#2DFF88]/20 text-[#2DFF88] text-xs flex items-center justify-center flex-shrink-0 mt-0.5">{item.num}</span>
+                      {item.text}
+                    </motion.li>
+                  ))}
+                  <motion.li
+                    className="flex items-start gap-2"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
                     <span className="w-5 h-5 rounded-full bg-[#FF8A00]/20 text-[#FF8A00] text-xs flex items-center justify-center flex-shrink-0 mt-0.5">6</span>
                     <span>Voce recebe <strong className="text-[#FF8A00]">90%</strong> do valor (taxa de 10%)</span>
-                  </li>
+                  </motion.li>
                 </ul>
-              </div>
+              </motion.div>
 
-              <div className="flex gap-4 pt-2">
-                <button
+              <motion.div
+                className="flex gap-4 pt-2"
+                variants={formItemVariants}
+              >
+                <motion.button
                   type="button"
                   onClick={() => router.back()}
                   className="flex-1 py-4 rounded-xl font-semibold text-gray-300 border border-white/10 hover:bg-white/5 transition-all"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   Cancelar
-                </button>
-                <button
+                </motion.button>
+                <motion.button
                   type="submit"
                   disabled={loading}
                   className="flex-1 btn-gradient py-4 rounded-xl font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  whileHover={{ scale: 1.02, boxShadow: "0 10px 30px rgba(22, 199, 132, 0.3)" }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                      <motion.svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      >
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
+                      </motion.svg>
                       Publicando...
                     </span>
                   ) : (
                     "Publicar Ingresso"
                   )}
-                </button>
-              </div>
-            </form>
-          </div>
+                </motion.button>
+              </motion.div>
+            </motion.form>
+          </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

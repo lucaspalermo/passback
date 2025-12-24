@@ -4,6 +4,15 @@ import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import Navbar from "@/components/Navbar";
+import {
+  AnimatedPage,
+  AnimatedHeader,
+  AnimatedStatCard,
+  AnimatedWalletCard,
+  AnimatedList,
+  AnimatedListItem,
+  AnimatedEmptyState,
+} from "@/components/ui/PageAnimations";
 
 const statusConfig: Record<string, { label: string; bgColor: string; textColor: string }> = {
   pending: { label: "Aguardando pagamento", bgColor: "bg-[#FF8A00]/10", textColor: "text-[#FF8A00]" },
@@ -62,21 +71,22 @@ export default async function MinhasVendasPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B1F33]">
+    <AnimatedPage className="min-h-screen bg-[#0B1F33]">
       <Navbar />
       <div className="pt-20 pb-8">
         <div className="max-w-5xl mx-auto px-4">
           {/* Header */}
-          <div className="mb-8">
+          <AnimatedHeader className="mb-8">
             <h1 className="text-2xl md:text-3xl font-bold text-white">Minhas Vendas</h1>
             <p className="text-gray-400 mt-1">Acompanhe suas vendas e ganhos</p>
-          </div>
+          </AnimatedHeader>
 
           {/* Wallet Card */}
-          <Link
-            href="/carteira"
-            className="block bg-gradient-to-r from-[#16C784]/20 to-[#2DFF88]/10 rounded-2xl p-6 border border-[#16C784]/30 mb-6 hover:border-[#16C784]/50 transition-all group"
-          >
+          <AnimatedWalletCard className="mb-6">
+            <Link
+              href="/carteira"
+              className="block bg-gradient-to-r from-[#16C784]/20 to-[#2DFF88]/10 rounded-2xl p-6 border border-[#16C784]/30 hover:border-[#16C784]/50 transition-all group"
+            >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-xl bg-[#16C784]/20 flex items-center justify-center">
@@ -103,7 +113,8 @@ export default async function MinhasVendasPage() {
                 </svg>
               </div>
             </div>
-          </Link>
+            </Link>
+          </AnimatedWalletCard>
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -243,6 +254,6 @@ export default async function MinhasVendasPage() {
           )}
         </div>
       </div>
-    </div>
+    </AnimatedPage>
   );
 }

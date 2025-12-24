@@ -6,6 +6,18 @@ import Link from "next/link";
 import ActionButtons from "./ActionButtons";
 import FavoriteWrapper from "./FavoriteWrapper";
 import { SellerRatingBadge, SellerRatingFull } from "@/components/SellerRating";
+import {
+  PageWrapper,
+  HeroSection,
+  ContentCard,
+  SidebarCard,
+  AnimatedBadge,
+  BackButton,
+  InfoCard,
+  SecurityItem,
+  PriceDisplay,
+  TicketIcon,
+} from "./TicketDetailsClient";
 
 interface TicketPageProps {
   params: Promise<{ id: string }>;
@@ -79,9 +91,9 @@ export default async function TicketPage({ params }: TicketPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B1F33]">
+    <PageWrapper>
       {/* Hero do Evento */}
-      <div className={`relative h-64 md:h-80 ${!ticket.imageUrl ? `bg-gradient-to-br ${getGradient(ticket.eventName)}` : ""}`}>
+      <HeroSection hasImage={!!ticket.imageUrl} gradient={getGradient(ticket.eventName)}>
         {/* Imagem de fundo se existir */}
         {ticket.imageUrl && (
           <img
@@ -95,56 +107,48 @@ export default async function TicketPage({ params }: TicketPageProps) {
 
         {/* Voltar e Favorito */}
         <div className="absolute top-4 left-4 z-10 flex items-center gap-3">
-          <Link
-            href="/"
-            className="flex items-center gap-2 bg-black/30 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm hover:bg-black/40 transition-all"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Voltar
-          </Link>
+          <BackButton>
+            <Link
+              href="/"
+              className="flex items-center gap-2 bg-black/30 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm hover:bg-black/40 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Voltar
+            </Link>
+          </BackButton>
           <FavoriteWrapper ticketId={ticket.id} />
         </div>
 
         {/* Badge de Status */}
         <div className="absolute top-4 right-4 z-10">
           {isAvailable ? (
-            <span className="bg-[#16C784] text-white px-4 py-2 rounded-full text-sm font-medium">
-              Disponivel
-            </span>
+            <AnimatedBadge variant="success">Disponivel</AnimatedBadge>
           ) : (
-            <span className="bg-gray-500 text-white px-4 py-2 rounded-full text-sm font-medium">
+            <AnimatedBadge variant="gray">
               {ticket.status === "sold" ? "Vendido" : ticket.status}
-            </span>
+            </AnimatedBadge>
           )}
         </div>
 
         {/* Badge de Desconto */}
         {discount > 0 && (
           <div className="absolute bottom-4 right-4 z-10">
-            <span className="discount-badge px-4 py-2 rounded-full text-sm font-bold text-white">
-              -{discount}% OFF
-            </span>
+            <AnimatedBadge variant="discount">-{discount}% OFF</AnimatedBadge>
           </div>
         )}
 
         {/* Icone (apenas se nao tiver imagem) */}
-        {!ticket.imageUrl && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10">
-            <svg className="w-48 h-48 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-            </svg>
-          </div>
-        )}
-      </div>
+        {!ticket.imageUrl && <TicketIcon />}
+      </HeroSection>
 
       <div className="max-w-6xl mx-auto px-4 -mt-20 relative z-10 pb-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Coluna Principal */}
           <div className="lg:col-span-2 space-y-6">
             {/* Card de Info Principal */}
-            <div className="bg-[#0F2A44] rounded-2xl p-6 border border-white/5">
+            <ContentCard delay={0.1}>
               <div className="flex items-center gap-2 mb-4">
                 <span className="bg-[#1A3A5C] text-gray-300 px-3 py-1 rounded-full text-sm">
                   {ticket.ticketType}
@@ -157,7 +161,7 @@ export default async function TicketPage({ params }: TicketPageProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Data */}
-                <div className="flex items-start gap-4 bg-[#1A3A5C]/50 rounded-xl p-4">
+                <InfoCard delay={0.2}>
                   <div className="w-12 h-12 rounded-xl bg-[#16C784]/10 flex items-center justify-center flex-shrink-0">
                     <svg className="w-6 h-6 text-[#16C784]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -168,10 +172,10 @@ export default async function TicketPage({ params }: TicketPageProps) {
                     <p className="text-white font-medium capitalize">{formatDate(ticket.eventDate)}</p>
                     <p className="text-[#16C784] font-semibold">{formatTime(ticket.eventDate)}</p>
                   </div>
-                </div>
+                </InfoCard>
 
                 {/* Local */}
-                <div className="flex items-start gap-4 bg-[#1A3A5C]/50 rounded-xl p-4">
+                <InfoCard delay={0.3}>
                   <div className="w-12 h-12 rounded-xl bg-[#FF8A00]/10 flex items-center justify-center flex-shrink-0">
                     <svg className="w-6 h-6 text-[#FF8A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -182,13 +186,13 @@ export default async function TicketPage({ params }: TicketPageProps) {
                     <p className="text-gray-400 text-sm">Local</p>
                     <p className="text-white font-medium">{ticket.eventLocation}</p>
                   </div>
-                </div>
+                </InfoCard>
               </div>
-            </div>
+            </ContentCard>
 
             {/* Descricao */}
             {ticket.description && (
-              <div className="bg-[#0F2A44] rounded-2xl p-6 border border-white/5">
+              <ContentCard delay={0.2}>
                 <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                   <svg className="w-5 h-5 text-[#16C784]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
@@ -198,11 +202,11 @@ export default async function TicketPage({ params }: TicketPageProps) {
                 <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
                   {ticket.description}
                 </p>
-              </div>
+              </ContentCard>
             )}
 
             {/* Vendedor */}
-            <div className="bg-[#0F2A44] rounded-2xl p-6 border border-white/5">
+            <ContentCard delay={0.3}>
               <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                 <svg className="w-5 h-5 text-[#2DFF88]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -236,28 +240,19 @@ export default async function TicketPage({ params }: TicketPageProps) {
               <div className="mt-4 pt-4 border-t border-white/5">
                 <SellerRatingFull sellerId={ticket.seller.id} />
               </div>
-            </div>
+            </ContentCard>
           </div>
 
           {/* Sidebar - Card de Compra */}
           <div className="lg:col-span-1">
-            <div className="bg-[#0F2A44] rounded-2xl p-6 border border-white/5 sticky top-20">
+            <SidebarCard>
               {/* Preco */}
-              <div className="mb-6">
-                {ticket.originalPrice && ticket.originalPrice > ticket.price && (
-                  <p className="text-gray-500 line-through text-lg">
-                    {formatPrice(ticket.originalPrice)}
-                  </p>
-                )}
-                <p className="text-4xl font-bold text-white">
-                  {formatPrice(ticket.price)}
-                </p>
-                {discount > 0 && (
-                  <p className="text-[#16C784] text-sm mt-1">
-                    Voce economiza {formatPrice(ticket.originalPrice! - ticket.price)}
-                  </p>
-                )}
-              </div>
+              <PriceDisplay
+                price={ticket.price}
+                originalPrice={ticket.originalPrice}
+                discount={discount}
+                formatPrice={formatPrice}
+              />
 
               {/* Detalhes do valor */}
               <div className="border-t border-white/5 pt-4 mb-6 space-y-3">
@@ -315,35 +310,35 @@ export default async function TicketPage({ params }: TicketPageProps) {
 
               {/* Seguranca */}
               <div className="mt-6 space-y-3">
-                <div className="flex items-center gap-3 text-sm">
+                <SecurityItem delay={0.4}>
                   <div className="w-8 h-8 rounded-lg bg-[#16C784]/10 flex items-center justify-center">
                     <svg className="w-4 h-4 text-[#16C784]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                   </div>
                   <span className="text-gray-400">Pagamento protegido (escrow)</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
+                </SecurityItem>
+                <SecurityItem delay={0.5}>
                   <div className="w-8 h-8 rounded-lg bg-[#2DFF88]/10 flex items-center justify-center">
                     <svg className="w-4 h-4 text-[#2DFF88]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
                   </div>
                   <span className="text-gray-400">Contato via WhatsApp</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
+                </SecurityItem>
+                <SecurityItem delay={0.6}>
                   <div className="w-8 h-8 rounded-lg bg-[#FF8A00]/10 flex items-center justify-center">
                     <svg className="w-4 h-4 text-[#FF8A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                   </div>
                   <span className="text-gray-400">Suporte em disputas</span>
-                </div>
+                </SecurityItem>
               </div>
-            </div>
+            </SidebarCard>
           </div>
         </div>
       </div>
-    </div>
+    </PageWrapper>
   );
 }
