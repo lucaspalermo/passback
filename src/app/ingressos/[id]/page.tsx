@@ -251,7 +251,6 @@ export default async function TicketPage({ params }: TicketPageProps) {
                 price={ticket.price}
                 originalPrice={ticket.originalPrice}
                 discount={discount}
-                formatPrice={formatPrice}
               />
 
               {/* Detalhes do valor */}

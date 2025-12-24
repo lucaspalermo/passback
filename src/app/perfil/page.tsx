@@ -5,6 +5,20 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+import { motion, AnimatePresence } from "framer-motion";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
+};
 
 interface UserProfile {
   id: string;
@@ -114,62 +128,121 @@ export default function PerfilPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B1F33]">
+    <motion.div
+      className="min-h-screen bg-[#0B1F33]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
       <Navbar />
       <div className="pt-20 pb-8">
         <div className="max-w-2xl mx-auto px-4">
           {/* Header */}
-          <div className="mb-8">
+          <motion.div
+            className="mb-8"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
             <h1 className="text-2xl md:text-3xl font-bold text-white">Meu Perfil</h1>
             <p className="text-gray-400 mt-1">Gerencie suas informacoes pessoais</p>
-          </div>
+          </motion.div>
 
           {/* Profile Card */}
-          <div className="bg-[#0F2A44] rounded-2xl border border-white/5 overflow-hidden">
+          <motion.div
+            className="bg-[#0F2A44] rounded-2xl border border-white/5 overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
             {/* Profile Header */}
-            <div className="bg-gradient-to-r from-[#16C784] to-[#2DFF88] p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+            <motion.div
+              className="bg-gradient-to-r from-[#16C784] to-[#2DFF88] p-6 relative overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <motion.div
+                className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"
+                animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.3, 0.2] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              />
+              <div className="flex items-center gap-4 relative z-10">
+                <motion.div
+                  className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 300, delay: 0.3 }}
+                >
                   <span className="text-2xl font-bold text-white">
                     {profile.name.charAt(0).toUpperCase()}
                   </span>
-                </div>
-                <div>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
                   <h2 className="text-xl font-bold text-white">{profile.name}</h2>
                   <p className="text-white/80">{profile.email}</p>
                   {profile.verified && (
-                    <span className="inline-flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded text-xs text-white mt-1">
+                    <motion.span
+                      className="inline-flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded text-xs text-white mt-1"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.5 }}
+                    >
                       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Verificado
-                    </span>
+                    </motion.span>
                   )}
-                </div>
+                </motion.div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Form */}
             <div className="p-6">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {error && (
-                  <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-sm flex items-center gap-2">
-                    <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {error}
-                  </div>
-                )}
-                {success && (
-                  <div className="bg-[#16C784]/10 border border-[#16C784]/20 text-[#16C784] p-4 rounded-xl text-sm flex items-center gap-2">
-                    <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {success}
-                  </div>
-                )}
+              <motion.form
+                onSubmit={handleSubmit}
+                className="space-y-6"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <AnimatePresence>
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-sm flex items-center gap-2 overflow-hidden"
+                    >
+                      <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {error}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <AnimatePresence>
+                  {success && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-[#16C784]/10 border border-[#16C784]/20 text-[#16C784] p-4 rounded-xl text-sm flex items-center gap-2 overflow-hidden"
+                    >
+                      <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {success}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-                <div className="space-y-2">
+                <motion.div className="space-y-2" variants={itemVariants}>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-300">
                     Email
                   </label>
@@ -188,9 +261,9 @@ export default function PerfilPage() {
                     </div>
                   </div>
                   <p className="text-xs text-gray-500">O email nao pode ser alterado</p>
-                </div>
+                </motion.div>
 
-                <div className="space-y-2">
+                <motion.div className="space-y-2" variants={itemVariants}>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-300">
                     Nome completo
                   </label>
@@ -202,9 +275,9 @@ export default function PerfilPage() {
                     required
                     className="w-full bg-[#1A3A5C] border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#16C784]/50 focus:border-transparent transition-all"
                   />
-                </div>
+                </motion.div>
 
-                <div className="space-y-2">
+                <motion.div className="space-y-2" variants={itemVariants}>
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-300">
                     Telefone (WhatsApp)
                   </label>
@@ -224,9 +297,9 @@ export default function PerfilPage() {
                     />
                   </div>
                   <p className="text-xs text-gray-500">Usado para contato apos pagamento confirmado</p>
-                </div>
+                </motion.div>
 
-                <div className="space-y-2">
+                <motion.div className="space-y-2" variants={itemVariants}>
                   <label htmlFor="cpf" className="block text-sm font-medium text-gray-300">
                     CPF
                   </label>
@@ -238,9 +311,9 @@ export default function PerfilPage() {
                     onChange={(e) => setProfile({ ...profile, cpf: e.target.value })}
                     className="w-full bg-[#1A3A5C] border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#16C784]/50 focus:border-transparent transition-all"
                   />
-                </div>
+                </motion.div>
 
-                <div className="space-y-2">
+                <motion.div className="space-y-2" variants={itemVariants}>
                   <label htmlFor="pixKey" className="block text-sm font-medium text-gray-300">
                     Chave PIX
                   </label>
@@ -260,12 +333,15 @@ export default function PerfilPage() {
                     />
                   </div>
                   <p className="text-xs text-gray-500">Pode ser CPF, email, telefone ou chave aleatoria</p>
-                </div>
+                </motion.div>
 
-                <button
+                <motion.button
                   type="submit"
                   disabled={saving}
                   className="w-full btn-gradient py-4 rounded-xl font-semibold text-white text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   {saving ? (
                     <span className="flex items-center justify-center gap-2">
@@ -278,48 +354,57 @@ export default function PerfilPage() {
                   ) : (
                     "Salvar alteracoes"
                   )}
-                </button>
-              </form>
+                </motion.button>
+              </motion.form>
             </div>
-          </div>
+          </motion.div>
 
           {/* Quick Links */}
-          <div className="mt-6 grid grid-cols-2 gap-4">
-            <Link
-              href="/meus-ingressos"
-              className="bg-[#0F2A44] rounded-xl p-4 border border-white/5 hover:border-white/10 transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#16C784]/10 flex items-center justify-center group-hover:bg-[#16C784]/20 transition-all">
-                  <svg className="w-5 h-5 text-[#16C784]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                  </svg>
+          <motion.div
+            className="mt-6 grid grid-cols-2 gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <motion.div whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}>
+              <Link
+                href="/meus-ingressos"
+                className="block bg-[#0F2A44] rounded-xl p-4 border border-white/5 hover:border-white/10 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-[#16C784]/10 flex items-center justify-center group-hover:bg-[#16C784]/20 transition-all">
+                    <svg className="w-5 h-5 text-[#16C784]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">Meus Ingressos</p>
+                    <p className="text-xs text-gray-500">Gerencie seus anuncios</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-white">Meus Ingressos</p>
-                  <p className="text-xs text-gray-500">Gerencie seus anuncios</p>
+              </Link>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}>
+              <Link
+                href="/minhas-vendas"
+                className="block bg-[#0F2A44] rounded-xl p-4 border border-white/5 hover:border-white/10 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-[#FF8A00]/10 flex items-center justify-center group-hover:bg-[#FF8A00]/20 transition-all">
+                    <svg className="w-5 h-5 text-[#FF8A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">Minhas Vendas</p>
+                    <p className="text-xs text-gray-500">Veja seus ganhos</p>
+                  </div>
                 </div>
-              </div>
-            </Link>
-            <Link
-              href="/minhas-vendas"
-              className="bg-[#0F2A44] rounded-xl p-4 border border-white/5 hover:border-white/10 transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#FF8A00]/10 flex items-center justify-center group-hover:bg-[#FF8A00]/20 transition-all">
-                  <svg className="w-5 h-5 text-[#FF8A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="font-medium text-white">Minhas Vendas</p>
-                  <p className="text-xs text-gray-500">Veja seus ganhos</p>
-                </div>
-              </div>
-            </Link>
-          </div>
+              </Link>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -150,13 +150,18 @@ export function PriceDisplay({
   price,
   originalPrice,
   discount,
-  formatPrice,
 }: {
   price: number;
   originalPrice?: number | null;
   discount: number;
-  formatPrice: (value: number) => string;
 }) {
+  const formatPrice = (value: number) => {
+    return value.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  };
+
   return (
     <motion.div
       className="mb-6"
