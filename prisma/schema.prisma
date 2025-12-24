@@ -9,20 +9,29 @@ datasource db {
 }
 
 model User {
-  id                  String    @id @default(cuid())
-  email               String    @unique
-  name                String
-  password            String
-  phone               String?
-  cpf                 String?
-  pixKey              String?
-  image               String?
-  asaasCustomerId     String?   // ID do cliente no Asaas
-  verified            Boolean   @default(false)
-  isAdmin             Boolean   @default(false)
-  isIdentityVerified  Boolean   @default(false)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                       String    @id @default(cuid())
+  email                    String    @unique
+  name                     String
+  password                 String
+  phone                    String?
+  cpf                      String?
+  pixKey                   String?
+  image                    String?
+  asaasCustomerId          String?   // ID do cliente no Asaas
+  verified                 Boolean   @default(false)
+  isAdmin                  Boolean   @default(false)
+  isIdentityVerified       Boolean   @default(false)
+
+  // Verificacoes especificas
+  emailVerified            Boolean   @default(false)
+  emailVerificationCode    String?
+  emailVerificationExpires DateTime?
+  cpfVerified              Boolean   @default(false)
+  cpfValidatedName         String?   // Nome retornado pela API de validacao
+  phoneVerified            Boolean   @default(false) // Formato validado
+
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
   ticketsForSale            Ticket[]               @relation("SellerTickets")
   purchases                 Transaction[]          @relation("BuyerTransactions")
