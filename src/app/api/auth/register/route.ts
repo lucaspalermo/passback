@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 import { sendWelcomeEmail } from "@/lib/email";
+import { authLimiter, checkRateLimit, getIdentifier, rateLimitResponse } from "@/lib/ratelimit";
+import { logAuthEvent, logSecurityEvent } from "@/lib/audit";
 
 // Validação de CPF
 function validateCPF(cpf: string): boolean {
@@ -39,6 +41,14 @@ const registerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const identifier = getIdentifier(request);
+    const rateLimit = await checkRateLimit(authLimiter(), identifier);
+    if (!rateLimit.success) {
+      logSecurityEvent("rate_limited", request, undefined, { route: "/api/auth/register" });
+      return rateLimitResponse(rateLimit.reset);
+    }
+
     const body = await request.json();
     const validation = registerSchema.safeParse(body);
 
@@ -93,6 +103,9 @@ export async function POST(request: NextRequest) {
     sendWelcomeEmail(email, name).catch((err) => {
       console.error("[Email] Erro ao enviar boas-vindas:", err);
     });
+
+    // Log de auditoria
+    logAuthEvent("register", request, user.id, { email });
 
     return NextResponse.json(
       {

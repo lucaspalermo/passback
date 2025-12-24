@@ -4,6 +4,8 @@ import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
 import { sendDisputeOpenedEmail } from "@/lib/email";
+import { strictLimiter, checkRateLimit, getIdentifier, rateLimitResponse } from "@/lib/ratelimit";
+import { logDisputeEvent, logSecurityEvent } from "@/lib/audit";
 
 const disputeSchema = z.object({
   transactionId: z.string().min(1, "ID da transacao e obrigatorio"),
@@ -23,6 +25,14 @@ export async function POST(request: NextRequest) {
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+    }
+
+    // Rate limiting (3 por minuto)
+    const identifier = getIdentifier(request, session.user.id);
+    const rateLimit = await checkRateLimit(strictLimiter(), identifier);
+    if (!rateLimit.success) {
+      logSecurityEvent("rate_limited", request, session.user.id, { route: "/api/disputes" });
+      return rateLimitResponse(rateLimit.reset);
     }
 
     const body = await request.json();
@@ -104,6 +114,12 @@ export async function POST(request: NextRequest) {
     await prisma.transaction.update({
       where: { id: transactionId },
       data: { status: "disputed" },
+    });
+
+    // Log de auditoria
+    logDisputeEvent("opened", session.user.id, dispute.id, {
+      transactionId,
+      reason,
     });
 
     // Mapeamento de motivos para exibição

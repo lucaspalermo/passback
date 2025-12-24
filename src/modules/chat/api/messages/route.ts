@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isChatEnabled } from "../../config";
 import { getMessages, sendMessage, markAsRead } from "../../services";
+import { messageLimiter, checkRateLimit, getIdentifier, rateLimitResponse } from "@/lib/ratelimit";
 
 // GET /api/modules/chat/messages?conversationId=xxx
 export async function GET(request: NextRequest) {
@@ -66,6 +67,13 @@ export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
+  // Rate limiting (30 mensagens por minuto)
+  const identifier = getIdentifier(request, session.user.id);
+  const rateLimit = await checkRateLimit(messageLimiter(), identifier);
+  if (!rateLimit.success) {
+    return rateLimitResponse(rateLimit.reset);
   }
 
   try {

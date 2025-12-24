@@ -3,12 +3,22 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { sendWithdrawalRequestedEmail } from "@/lib/email";
+import { strictLimiter, checkRateLimit, getIdentifier, rateLimitResponse } from "@/lib/ratelimit";
+import { logWithdrawalEvent, logSecurityEvent } from "@/lib/audit";
 
 // POST - Solicitar saque
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+  }
+
+  // Rate limiting (3 por minuto para operações financeiras)
+  const identifier = getIdentifier(request, session.user.id);
+  const rateLimit = await checkRateLimit(strictLimiter(), identifier);
+  if (!rateLimit.success) {
+    logSecurityEvent("rate_limited", request, session.user.id, { route: "/api/modules/wallet/withdraw" });
+    return rateLimitResponse(rateLimit.reset);
   }
 
   try {
@@ -101,6 +111,9 @@ export async function POST(request: NextRequest) {
       amount,
       pixKey
     ).catch((err) => console.error("[Email] Erro saque solicitado:", err));
+
+    // Log de auditoria
+    logWithdrawalEvent("requested", session.user.id, withdrawal.id, amount, { pixKeyType });
 
     return NextResponse.json({
       message: "Saque solicitado com sucesso",

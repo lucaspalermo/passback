@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { existsSync } from "fs";
+import { generalLimiter, checkRateLimit, getIdentifier, rateLimitResponse } from "@/lib/ratelimit";
 
 // Tipos de arquivo permitidos
 const ALLOWED_TYPES = [
@@ -24,6 +25,13 @@ export async function POST(request: NextRequest) {
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+    }
+
+    // Rate limiting
+    const identifier = getIdentifier(request, session.user.id);
+    const rateLimit = await checkRateLimit(generalLimiter(), identifier);
+    if (!rateLimit.success) {
+      return rateLimitResponse(rateLimit.reset);
     }
 
     const formData = await request.formData();

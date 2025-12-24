@@ -8,12 +8,22 @@ import {
   getPixQrCode,
   createPaymentLink,
 } from "@/lib/asaas";
+import { transactionLimiter, checkRateLimit, getIdentifier, rateLimitResponse } from "@/lib/ratelimit";
+import { logTransactionEvent, logSecurityEvent } from "@/lib/audit";
 
 const PLATFORM_FEE_PERCENTAGE = 0.10; // 10%
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+
+    // Rate limiting
+    const identifier = getIdentifier(request, session?.user?.id);
+    const rateLimit = await checkRateLimit(transactionLimiter(), identifier);
+    if (!rateLimit.success) {
+      logSecurityEvent("rate_limited", request, session?.user?.id, { route: "/api/transactions" });
+      return rateLimitResponse(rateLimit.reset);
+    }
 
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -254,6 +264,13 @@ export async function POST(request: NextRequest) {
     await prisma.ticket.update({
       where: { id: ticketId },
       data: { status: "reserved" },
+    });
+
+    // Log de auditoria
+    logTransactionEvent("created", session.user.id, transaction.id, {
+      ticketId: ticket.id,
+      amount,
+      sellerId: ticket.sellerId,
     });
 
     // Cria cliente e pagamento no Asaas
