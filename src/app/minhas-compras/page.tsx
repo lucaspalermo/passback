@@ -166,9 +166,13 @@ export default async function MinhasComprasPage() {
                         </div>
                         <Link
                           href={`/compra/${purchase.id}`}
-                          className="px-4 py-2 rounded-lg bg-[#16C784]/10 text-[#16C784] hover:bg-[#16C784]/20 transition-all text-sm font-medium"
+                          className="px-4 py-2 rounded-lg bg-[#16C784]/10 text-[#16C784] hover:bg-[#16C784]/20 transition-all text-sm font-medium whitespace-nowrap"
                         >
-                          Ver detalhes
+                          {purchase.status === "awaiting_seller"
+                            ? "Ver status"
+                            : purchase.status === "pending"
+                              ? "Pagar agora"
+                              : "Ver detalhes"}
                         </Link>
                       </div>
                     </div>

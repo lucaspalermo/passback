@@ -243,16 +243,16 @@ export async function POST(request: NextRequest) {
     const platformFee = amount * PLATFORM_FEE_PERCENTAGE;
     const sellerAmount = amount - platformFee;
 
-    // Define expiração em 5 minutos (tempo para pagar)
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    // Define expiração em 15 minutos (tempo para vendedor confirmar)
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-    // Cria a transação
+    // Cria a transação com status awaiting_seller
     const transaction = await prisma.transaction.create({
       data: {
         amount,
         platformFee,
         sellerAmount,
-        status: "pending",
+        status: "awaiting_seller",
         expiresAt,
         ticketId: ticket.id,
         buyerId: session.user.id,
@@ -273,74 +273,32 @@ export async function POST(request: NextRequest) {
       sellerId: ticket.sellerId,
     });
 
-    // Cria cliente e pagamento no Asaas
+    // Envia notificação para o vendedor
     try {
-      // Cria/busca cliente no Asaas
-      const customer = await getOrCreateCustomer({
-        name: buyer.name,
-        email: buyer.email,
-        cpfCnpj: buyer.cpf,
-        phone: buyer.phone || undefined,
+      const { sendSellerConfirmationRequestEmail } = await import("@/lib/email");
+
+      await sendSellerConfirmationRequestEmail(
+        ticket.seller.email,
+        ticket.seller.name,
+        ticket.eventName,
+        ticket.ticketType,
+        amount,
+        buyer.name,
+        transaction.id,
+        15 // minutos para confirmar
+      ).catch((err) => {
+        console.error("[Email] Erro ao notificar vendedor:", err);
       });
-
-      // Atualiza o ID do cliente no usuário se não tiver
-      if (!buyer.asaasCustomerId) {
-        await prisma.user.update({
-          where: { id: buyer.id },
-          data: { asaasCustomerId: customer.id },
-        });
-      }
-
-      // Verifica o método de pagamento
-      if (paymentMethod === "CREDIT_CARD") {
-        // Para cartão, cria um link de pagamento
-        const paymentLink = await createPaymentLink({
-          name: `Ingresso: ${ticket.eventName}`,
-          description: `${ticket.ticketType} - ${ticket.eventLocation}`,
-          value: amount,
-          billingType: "CREDIT_CARD",
-          externalReference: transaction.id,
-        });
-
-        return NextResponse.json({
-          transaction,
-          checkoutUrl: paymentLink.url,
-          paymentMethod: "CREDIT_CARD",
-        });
-      }
-
-      // Para PIX, cria cobrança direta
-      const payment = await createPayment({
-        customerId: customer.id,
-        value: amount,
-        description: `Ingresso: ${ticket.eventName} - ${ticket.ticketType}`,
-        externalReference: transaction.id,
-        billingType: "PIX",
-      });
-
-      // Obtém QR Code PIX
-      const pixQrCode = await getPixQrCode(payment.id);
-
-      return NextResponse.json({
-        transaction,
-        paymentId: payment.id,
-        paymentMethod: "PIX",
-        pixQrCode: {
-          encodedImage: pixQrCode.encodedImage,
-          payload: pixQrCode.payload,
-          expirationDate: pixQrCode.expirationDate,
-        },
-      });
-    } catch (asaasError) {
-      console.error("Erro Asaas:", asaasError);
-
-      // Se falhar no Asaas, ainda retorna a transação para fluxo manual
-      return NextResponse.json({
-        transaction,
-        pixQrCode: null,
-        message: "Erro ao gerar pagamento. Tente novamente.",
-      });
+    } catch (err) {
+      console.error("Erro ao importar email:", err);
     }
+
+    // Retorna transação aguardando confirmação do vendedor
+    return NextResponse.json({
+      transaction,
+      status: "awaiting_seller",
+      message: "Aguardando confirmação do vendedor. Você será notificado quando ele confirmar.",
+    });
   } catch (error) {
     console.error("Erro ao criar transacao:", error);
     return NextResponse.json(
