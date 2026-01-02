@@ -155,15 +155,27 @@ export async function findCustomerByCpfCnpj(cpfCnpj: string): Promise<AsaasCusto
 export async function createCustomer(params: CreateCustomerParams): Promise<AsaasCustomer> {
   const cleanCpf = params.cpfCnpj.replace(/\D/g, "");
 
+  // Limpa e valida telefone (deve ter 10 ou 11 dígitos)
+  let cleanPhone = params.phone?.replace(/\D/g, "") || "";
+  if (cleanPhone.length < 10 || cleanPhone.length > 11) {
+    cleanPhone = ""; // Não envia telefone inválido
+  }
+
+  const body: Record<string, unknown> = {
+    name: params.name,
+    email: params.email,
+    cpfCnpj: cleanCpf,
+    notificationDisabled: false,
+  };
+
+  // Só adiciona phone se for válido
+  if (cleanPhone) {
+    body.phone = cleanPhone;
+  }
+
   return asaasRequest<AsaasCustomer>("/customers", {
     method: "POST",
-    body: JSON.stringify({
-      name: params.name,
-      email: params.email,
-      cpfCnpj: cleanCpf,
-      phone: params.phone?.replace(/\D/g, ""),
-      notificationDisabled: false,
-    }),
+    body: JSON.stringify(body),
   });
 }
 
