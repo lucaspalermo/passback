@@ -723,3 +723,158 @@ export async function sendOfferRejectedEmail(
     html,
   });
 }
+
+// ==================== EMAILS DE CONFIRMACAO DO VENDEDOR ====================
+
+// 14. Solicitacao de confirmacao para o vendedor (nova reserva)
+export async function sendSellerConfirmationRequestEmail(
+  to: string,
+  sellerName: string,
+  eventName: string,
+  ticketType: string,
+  price: number,
+  buyerName: string,
+  transactionId: string,
+  timeoutMinutes: number
+) {
+  const html = baseTemplate(`
+    <div style="text-align: center; margin-bottom: 20px;">
+      <div style="display: inline-block; width: 60px; height: 60px; background-color: #FF8A00; border-radius: 50%; line-height: 60px;">
+        <span style="font-size: 30px;">!</span>
+      </div>
+    </div>
+    <h2 style="margin: 0 0 20px; font-size: 24px; color: #FFFFFF; text-align: center;">
+      Nova Reserva - Confirmacao Necessaria!
+    </h2>
+    <p style="margin: 0 0 15px; font-size: 16px; color: #B8C5D3; line-height: 1.6;">
+      Ola ${sellerName}, <strong>${buyerName}</strong> quer comprar seu ingresso!
+    </p>
+    <div style="background-color: #1A3A5C; border-radius: 12px; padding: 20px; margin: 20px 0;">
+      <p style="margin: 0 0 10px; font-size: 18px; font-weight: 600; color: #FFFFFF;">
+        ${eventName}
+      </p>
+      <p style="margin: 0 0 10px; font-size: 14px; color: #8B9DB5;">
+        ${ticketType}
+      </p>
+      <p style="margin: 0; font-size: 24px; font-weight: bold; color: #16C784;">
+        ${formatPrice(price)}
+      </p>
+    </div>
+    <div style="background-color: #FF8A00/20; border: 1px solid #FF8A00; border-radius: 12px; padding: 15px; margin: 20px 0;">
+      <p style="margin: 0; font-size: 14px; color: #FF8A00; text-align: center;">
+        <strong>Importante:</strong> Voce tem ${timeoutMinutes} minutos para confirmar que ainda possui o ingresso.
+        Se nao confirmar, a reserva sera cancelada automaticamente.
+      </p>
+    </div>
+    <p style="margin: 0 0 15px; font-size: 16px; color: #B8C5D3; line-height: 1.6;">
+      Ao confirmar, o comprador podera efetuar o pagamento e voce se compromete a entregar o ingresso.
+    </p>
+    <div style="text-align: center; margin-top: 30px;">
+      ${buttonHtml("Confirmar Disponibilidade", `${APP_URL}/minhas-vendas`)}
+    </div>
+  `);
+
+  return sendEmail({
+    to,
+    subject: `URGENTE: Confirme a venda - ${eventName}`,
+    html,
+  });
+}
+
+// 15. Vendedor confirmou - notificar comprador para pagar
+export async function sendSellerConfirmedEmail(
+  to: string,
+  buyerName: string,
+  eventName: string,
+  ticketType: string,
+  price: number,
+  sellerName: string,
+  transactionId: string,
+  paymentTimeoutMinutes: number
+) {
+  const html = baseTemplate(`
+    <div style="text-align: center; margin-bottom: 20px;">
+      <div style="display: inline-block; width: 60px; height: 60px; background: linear-gradient(135deg, #16C784 0%, #2DFF88 100%); border-radius: 50%; line-height: 60px;">
+        <span style="font-size: 30px;">✓</span>
+      </div>
+    </div>
+    <h2 style="margin: 0 0 20px; font-size: 24px; color: #FFFFFF; text-align: center;">
+      Vendedor Confirmou - Pague Agora!
+    </h2>
+    <p style="margin: 0 0 15px; font-size: 16px; color: #B8C5D3; line-height: 1.6;">
+      Ola ${buyerName}, <strong>${sellerName}</strong> confirmou que o ingresso esta disponivel!
+    </p>
+    <div style="background-color: #1A3A5C; border-radius: 12px; padding: 20px; margin: 20px 0;">
+      <p style="margin: 0 0 10px; font-size: 18px; font-weight: 600; color: #FFFFFF;">
+        ${eventName}
+      </p>
+      <p style="margin: 0 0 10px; font-size: 14px; color: #8B9DB5;">
+        ${ticketType}
+      </p>
+      <p style="margin: 0; font-size: 24px; font-weight: bold; color: #16C784;">
+        ${formatPrice(price)}
+      </p>
+    </div>
+    <div style="background-color: #FF8A00/20; border: 1px solid #FF8A00; border-radius: 12px; padding: 15px; margin: 20px 0;">
+      <p style="margin: 0; font-size: 14px; color: #FF8A00; text-align: center;">
+        <strong>Importante:</strong> Complete o pagamento em ate ${paymentTimeoutMinutes} minutos para garantir seu ingresso!
+      </p>
+    </div>
+    <div style="text-align: center; margin-top: 30px;">
+      ${buttonHtml("Pagar Agora", `${APP_URL}/compra/${transactionId}`)}
+    </div>
+  `);
+
+  return sendEmail({
+    to,
+    subject: `Pague agora - ${eventName}`,
+    html,
+  });
+}
+
+// 16. Vendedor rejeitou - notificar comprador
+export async function sendSellerRejectedEmail(
+  to: string,
+  buyerName: string,
+  eventName: string,
+  ticketType: string,
+  price: number,
+  sellerName: string
+) {
+  const html = baseTemplate(`
+    <div style="text-align: center; margin-bottom: 20px;">
+      <div style="display: inline-block; width: 60px; height: 60px; background-color: #FF6B6B; border-radius: 50%; line-height: 60px;">
+        <span style="font-size: 30px;">✗</span>
+      </div>
+    </div>
+    <h2 style="margin: 0 0 20px; font-size: 24px; color: #FFFFFF; text-align: center;">
+      Reserva Cancelada
+    </h2>
+    <p style="margin: 0 0 15px; font-size: 16px; color: #B8C5D3; line-height: 1.6;">
+      Ola ${buyerName}, infelizmente o vendedor <strong>${sellerName}</strong> informou que o ingresso nao esta mais disponivel.
+    </p>
+    <div style="background-color: #1A3A5C; border-radius: 12px; padding: 20px; margin: 20px 0;">
+      <p style="margin: 0 0 10px; font-size: 18px; font-weight: 600; color: #FFFFFF;">
+        ${eventName}
+      </p>
+      <p style="margin: 0 0 10px; font-size: 14px; color: #8B9DB5;">
+        ${ticketType}
+      </p>
+      <p style="margin: 0; font-size: 18px; color: #8B9DB5; text-decoration: line-through;">
+        ${formatPrice(price)}
+      </p>
+    </div>
+    <p style="margin: 0 0 15px; font-size: 16px; color: #B8C5D3; line-height: 1.6;">
+      Nao se preocupe! Voce pode buscar outros ingressos disponiveis para o mesmo evento.
+    </p>
+    <div style="text-align: center; margin-top: 30px;">
+      ${buttonHtml("Ver Outros Ingressos", `${APP_URL}`)}
+    </div>
+  `);
+
+  return sendEmail({
+    to,
+    subject: `Ingresso indisponivel - ${eventName}`,
+    html,
+  });
+}

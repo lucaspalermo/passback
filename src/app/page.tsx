@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import TicketCard from "@/components/TicketCard";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import {
   FadeIn,
   StaggerContainer,
@@ -416,39 +417,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-8">
-        <div className="container mx-auto px-4">
-          <FadeIn direction="up">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <motion.div
-                className="flex items-center gap-2"
-                whileHover={{ scale: 1.05 }}
-              >
-                <motion.div
-                  className="w-8 h-8 bg-gradient-to-r from-[#16C784] to-[#2DFF88] rounded-lg flex items-center justify-center"
-                  animate={{ rotate: [0, 5, -5, 0] }}
-                  transition={{ duration: 4, repeat: Infinity }}
-                >
-                  <span className="text-white font-bold text-sm">P</span>
-                </motion.div>
-                <span className="text-white font-semibold">Passback</span>
-              </motion.div>
-              <p className="text-gray-500 text-sm">
-                © 2024 Passback. Todos os direitos reservados.
-              </p>
-              <div className="flex items-center gap-6">
-                {["Termos", "Privacidade", "Suporte"].map((item) => (
-                  <motion.div key={item} whileHover={{ y: -2 }}>
-                    <Link href="#" className="text-gray-400 hover:text-white text-sm transition-colors">
-                      {item}
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </FadeIn>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

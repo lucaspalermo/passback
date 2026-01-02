@@ -35,6 +35,7 @@ export default function CadastroPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Formatar CPF
   const formatCPF = (value: string) => {
@@ -111,6 +112,11 @@ export default function CadastroPage() {
       return;
     }
 
+    if (!termsAccepted) {
+      setError("Voce precisa aceitar os Termos de Uso e Politica de Privacidade");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -123,6 +129,7 @@ export default function CadastroPage() {
           password,
           phone: phoneNumbers,
           cpf: cpf.replace(/\D/g, ""),
+          termsAccepted: true,
         }),
       });
 
@@ -340,26 +347,35 @@ export default function CadastroPage() {
           <input
             type="checkbox"
             id="terms"
-            required
+            checked={termsAccepted}
+            onChange={(e) => setTermsAccepted(e.target.checked)}
             className="mt-1 w-4 h-4 rounded border-white/20 bg-[#1A3A5C] text-[#16C784] focus:ring-[#16C784]/50"
           />
           <label htmlFor="terms" className="text-sm text-gray-400">
-            Concordo com os{" "}
-            <motion.a
-              href="#"
+            Li e concordo com os{" "}
+            <Link
+              href="/termos"
+              target="_blank"
               className="text-[#16C784] hover:underline"
-              whileHover={{ scale: 1.05 }}
             >
               Termos de Uso
-            </motion.a>{" "}
-            e{" "}
-            <motion.a
-              href="#"
+            </Link>
+            ,{" "}
+            <Link
+              href="/privacidade"
+              target="_blank"
               className="text-[#16C784] hover:underline"
-              whileHover={{ scale: 1.05 }}
             >
               Politica de Privacidade
-            </motion.a>
+            </Link>{" "}
+            e{" "}
+            <Link
+              href="/reembolso"
+              target="_blank"
+              className="text-[#16C784] hover:underline"
+            >
+              Politica de Reembolso
+            </Link>
           </label>
         </motion.div>
 

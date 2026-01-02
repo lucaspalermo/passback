@@ -17,6 +17,7 @@ interface CompraPageProps {
 }
 
 const statusConfig: Record<string, { label: string; bgColor: string; textColor: string; icon: string }> = {
+  awaiting_seller: { label: "Aguardando vendedor", bgColor: "bg-purple-500/10", textColor: "text-purple-400", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
   pending: { label: "Aguardando pagamento", bgColor: "bg-[#FF8A00]/10", textColor: "text-[#FF8A00]", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
   paid: { label: "Pago - Aguardando entrega", bgColor: "bg-blue-500/10", textColor: "text-blue-400", icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
   confirmed: { label: "Confirmado", bgColor: "bg-[#16C784]/10", textColor: "text-[#16C784]", icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
@@ -25,6 +26,7 @@ const statusConfig: Record<string, { label: string; bgColor: string; textColor: 
   refunded: { label: "Reembolsado", bgColor: "bg-gray-500/10", textColor: "text-gray-400", icon: "M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" },
   cancelled: { label: "Cancelado", bgColor: "bg-gray-500/10", textColor: "text-gray-400", icon: "M6 18L18 6M6 6l12 12" },
   expired: { label: "Expirado", bgColor: "bg-gray-500/10", textColor: "text-gray-400", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
+  seller_rejected: { label: "Rejeitado pelo vendedor", bgColor: "bg-gray-500/10", textColor: "text-gray-400", icon: "M6 18L18 6M6 6l12 12" },
 };
 
 export default async function CompraPage({ params, searchParams }: CompraPageProps) {
@@ -256,6 +258,66 @@ export default async function CompraPage({ params, searchParams }: CompraPagePro
 
             {/* Status Messages */}
             <div className="p-6 space-y-4">
+              {transaction.status === "awaiting_seller" && (
+                <div className="bg-purple-500/10 border border-purple-500/20 p-4 rounded-xl">
+                  <h4 className="font-medium text-purple-400 mb-2 flex items-center gap-2">
+                    <svg className="w-5 h-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Aguardando confirmacao do vendedor
+                  </h4>
+                  <p className="text-sm text-purple-300/80">
+                    {isBuyer
+                      ? "O vendedor tem ate 15 minutos para confirmar que ainda possui o ingresso. Voce sera notificado assim que ele confirmar para poder efetuar o pagamento."
+                      : "Voce precisa confirmar que ainda possui o ingresso para que o comprador possa efetuar o pagamento."}
+                  </p>
+                  {transaction.expiresAt && (
+                    <div className="mt-3 flex items-center gap-2 text-sm text-purple-400">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Expira em: {new Date(transaction.expiresAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                  )}
+                  {isSeller && (
+                    <div className="mt-4 flex gap-3">
+                      <a
+                        href="/minhas-vendas"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#16C784] text-white font-medium hover:bg-[#16C784]/80 transition-all"
+                      >
+                        Confirmar disponibilidade
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {transaction.status === "seller_rejected" && (
+                <div className="bg-gray-500/10 border border-gray-500/20 p-4 rounded-xl">
+                  <h4 className="font-medium text-gray-400 mb-2 flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Ingresso indisponivel
+                  </h4>
+                  <p className="text-sm text-gray-400">
+                    {isBuyer
+                      ? "Infelizmente o vendedor informou que o ingresso nao esta mais disponivel. Voce pode buscar outros ingressos para o mesmo evento."
+                      : "Voce rejeitou esta reserva. O ingresso voltou a ficar disponivel para venda."}
+                  </p>
+                  {isBuyer && (
+                    <div className="mt-4">
+                      <a
+                        href="/"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#16C784]/10 text-[#16C784] font-medium hover:bg-[#16C784]/20 transition-all"
+                      >
+                        Buscar outros ingressos
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {transaction.status === "pending" && (
                 <div className="bg-[#FF8A00]/10 border border-[#FF8A00]/20 p-4 rounded-xl">
                   <h4 className="font-medium text-[#FF8A00] mb-2 flex items-center gap-2">
@@ -266,8 +328,8 @@ export default async function CompraPage({ params, searchParams }: CompraPagePro
                   </h4>
                   <p className="text-sm text-[#FF8A00]/80">
                     {isBuyer
-                      ? "Complete o pagamento para receber os dados de contato do vendedor."
-                      : "O comprador ainda nao realizou o pagamento."}
+                      ? "O vendedor confirmou! Complete o pagamento para receber os dados de contato do vendedor."
+                      : "Voce confirmou a disponibilidade. O comprador esta efetuando o pagamento."}
                   </p>
                   {isBuyer && (
                     <PurchaseActions

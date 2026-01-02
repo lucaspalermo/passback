@@ -37,7 +37,12 @@ const registerSchema = z.object({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   cpf: z.string().min(11, "CPF e obrigatorio").refine(validateCPF, "CPF invalido"),
   phone: z.string().min(10, "WhatsApp e obrigatorio").max(11, "WhatsApp invalido"),
+  termsAccepted: z.boolean().refine((val) => val === true, "Voce precisa aceitar os termos"),
 });
+
+// Versao atual dos termos (atualizar quando mudar os termos)
+const TERMS_VERSION = "2024-12-24";
+const PRIVACY_VERSION = "2024-12-24";
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,6 +65,11 @@ export async function POST(request: NextRequest) {
     }
 
     const { name, email, password, cpf, phone } = validation.data;
+
+    // Obtem o IP do cliente para registro do aceite
+    const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || request.headers.get("x-real-ip")
+      || "unknown";
 
     // Verifica email duplicado
     const existingEmail = await prisma.user.findUnique({
@@ -87,6 +97,8 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const now = new Date();
+
     const user = await prisma.user.create({
       data: {
         name,
@@ -96,6 +108,12 @@ export async function POST(request: NextRequest) {
         phone,
         // PIX será o CPF por padrão
         pixKey: cpf,
+        // Registro do aceite dos termos (proteção jurídica)
+        termsAcceptedAt: now,
+        termsAcceptedVersion: TERMS_VERSION,
+        termsAcceptedIp: clientIp,
+        privacyAcceptedAt: now,
+        privacyAcceptedVersion: PRIVACY_VERSION,
       },
     });
 
